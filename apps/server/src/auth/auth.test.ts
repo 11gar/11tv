@@ -120,8 +120,53 @@ describe('AuthService', () => {
       new LoginLimiter({ maxAttempts: 3, baseLockMs: 60_000, maxLockMs: 60_000 });
     const auth = new AuthService(settings, sessions, limiter(), limiter(), log);
     await auth.init();
-    return { auth, settings };
+    return { auth, settings, dir, limiter };
   }
+
+  it('rouvre l’appairage après déconnexion ; le code et le PIN fonctionnent', async () => {
+    const { auth } = await setup();
+    const pin = auth.pairingPin!;
+    const session = await auth.login(pin, '192.168.1.20', 't');
+    if (!session.ok) throw new Error('connexion impossible');
+    expect(auth.pairingPin).toBeNull();
+
+    let changes = 0;
+    auth.on('pairingChange', () => changes++);
+    await auth.logout(session.token);
+    const code = auth.pairingPin;
+    expect(code).toMatch(/^\d{6}$/);
+    expect(changes).toBe(1);
+
+    const viaCode = await auth.login(code!, '192.168.1.20', 't');
+    expect(viaCode.ok).toBe(true);
+    expect(auth.pairingPin).toBeNull();
+    // Le code est à usage unique, le PIN reste valable
+    if (code !== pin) expect((await auth.login(code!, '192.168.1.21', 't')).ok).toBe(false);
+    expect((await auth.login(pin, '192.168.1.21', 't')).ok).toBe(true);
+  });
+
+  it('affiche un code au démarrage s’il ne reste aucune session', async () => {
+    const { auth, settings, dir, limiter } = await setup();
+    await auth.login(auth.pairingPin!, '192.168.1.20', 't');
+    const empty = await SessionStore.load(path.join(dir, 'other.json'), 10_000, log);
+    const restarted = new AuthService(settings, empty, limiter(), limiter(), log);
+    await restarted.init();
+    expect(restarted.pairingPin).toMatch(/^\d{6}$/);
+  });
+
+  it('le code d’appairage ne permet pas de changer le PIN', async () => {
+    const { auth } = await setup();
+    const pin = auth.pairingPin!;
+    const session = await auth.login(pin, '192.168.1.20', 't');
+    if (!session.ok) throw new Error('connexion impossible');
+    await auth.logout(session.token);
+    const code = auth.pairingPin!;
+    if (code === pin) return;
+    expect(await auth.changePin(code, '2468', '192.168.1.20', 't')).toEqual({
+      ok: false,
+      reason: 'invalid',
+    });
+  });
 
   it('génère un PIN d’appairage au premier démarrage, puis le retire après connexion', async () => {
     const { auth, settings } = await setup();

@@ -76,8 +76,9 @@ construites. Pour travailler sur une interface avec rechargement à chaud, lance
 `pnpm dev:tv` (http://localhost:5173) ou `pnpm dev:mobile` (http://localhost:5174) : Vite
 relaie l'API et le WebSocket vers le serveur.
 
-Au premier démarrage, la TV affiche un PIN d'appairage à 6 chiffres. Pour en regénérer un :
-`pnpm pin:reset`, puis redémarrez le serveur.
+Au premier démarrage, la TV affiche un PIN d'appairage à 6 chiffres. Ensuite, dès qu'aucun
+téléphone n'est connecté (déconnexion, session expirée), elle affiche un code à usage unique,
+accepté en plus du PIN. Pour repartir de zéro : `pnpm pin:reset`, puis redémarrez le serveur.
 
 | Commande         | Rôle                                                  |
 | ---------------- | ----------------------------------------------------- |

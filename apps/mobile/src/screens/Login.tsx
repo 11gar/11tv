@@ -44,7 +44,7 @@ export function Login({ onSuccess }: Props) {
   return (
     <main class="login">
       <h1 class="login__title">11TV</h1>
-      <p class="muted">Saisissez le PIN affiché sur la TV</p>
+      <p class="muted">Saisissez votre PIN, ou le code affiché sur la TV</p>
 
       <div class="pin-dots" aria-label={`${String(pin.length)} chiffres saisis`}>
         {Array.from({ length: Math.max(6, pin.length) }, (_, i) => (
