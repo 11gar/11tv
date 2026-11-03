@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'preact/hooks';
 import { fetchSession } from './api';
-import { Home } from './screens/Home';
 import { Login } from './screens/Login';
+import { Shell } from './Shell';
 
 type AuthState = 'checking' | 'login' | 'ready' | 'offline';
 
@@ -45,6 +45,6 @@ export function App() {
         />
       );
     case 'ready':
-      return <Home onSessionLost={onSessionLost} />;
+      return <Shell onSessionLost={onSessionLost} />;
   }
 }

@@ -6,6 +6,7 @@ coverage/
 
 # Données locales (réglages, sessions, certificats, profil Edge) : jamais dans le dépôt
 .data/
+.data-*/
 .env
 *.pem
 *.crt

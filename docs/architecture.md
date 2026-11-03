@@ -8,12 +8,14 @@ apps/server
   config.ts           variables d'environnement validées par zod, chemins des données
   hub/state-hub.ts    cœur : commandes des clients -> navigateur, diffusion de l'état
   browser/            BrowserController (interface) et EdgeBrowser (CDP via playwright-core)
+  input/              RemoteControl (télécommande -> touches CDP / souris), pilote SendInput
   auth/               PIN (scrypt), limiteur de tentatives, sessions, AuthService
   http/               lan-app (téléphone, HTTPS), tv-app (127.0.0.1), setup-app (certificat)
   tls/                autorité locale à contraintes de nom, certificat serveur
   net/                adresses privées, adresses de la machine sur le réseau local
   settings/, storage/ réglages persistés (JSON atomique validé)
-  wallpapers/         dossier surveillé des fonds d'écran
+  wallpapers/         dossier surveillé, ajout/ordre/suppression et vignettes (sharp)
+  errors.ts           UserFacingError : message affiché tel quel sur le téléphone
 packages/shared       types et catalogue des services (sans dépendance) + schémas zod
 packages/web          WebSocket avec reconnexion et hook Preact, communs aux deux interfaces
 apps/tv, apps/mobile  interfaces Preact construites par Vite et servies par le serveur
@@ -49,7 +51,12 @@ TV (PIN d'appairage) depuis le réseau.
 - **IP dynamique** : vérifiée chaque minute ; le certificat est réémis et rechargé à chaud
   (`setSecureContext`), le QR code d'appairage est recalculé.
 - **Fichiers** : écriture atomique et sérialisée ; un fichier corrompu est mis de côté et
-  remplacé par les valeurs par défaut.
+  remplacé par les valeurs par défaut. Les modifications de réglages sont mises en file :
+  deux commandes simultanées ne s'écrasent pas.
+- **Fonds d'écran** : écrits sous un nom temporaire puis renommés (la TV ne voit jamais une
+  image à moitié écrite) ; cache de libvips désactivé, sinon Windows verrouille les fichiers.
+- **Sessions révoquées** (changement de PIN) : vérifiées à chaque message et à chaque
+  heartbeat ; le WebSocket est fermé avec le code 4401.
 
 ## Décisions
 
@@ -59,5 +66,5 @@ Les choix structurants sont détaillés dans [adr/](adr/) :
 2. [HTTPS local par autorité à contraintes de nom](adr/0002-https-autorite-locale.md)
 3. [État complet poussé par WebSocket](adr/0003-etat-complet-websocket.md)
 4. [Monorepo pnpm et serveur regroupé par esbuild](adr/0004-monorepo-et-build.md)
-5. [Entrées clavier et souris (phase 2)](adr/0005-entrees-clavier-souris.md)
+5. [Entrées clavier et souris](adr/0005-entrees-clavier-souris.md)
 6. [YouTube Music (phase 3)](adr/0006-youtube-music.md)

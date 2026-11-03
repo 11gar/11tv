@@ -13,7 +13,10 @@ import { createLogger } from './log';
 import { getLanAddresses } from './net/addresses';
 import { SettingsService } from './settings/settings';
 import { TlsManager } from './tls/tls-manager';
+import { RemoteControl } from './input/remote-control';
+import { createInputDriver } from './input/win32-input-driver';
 import { WallpaperLibrary } from './wallpapers/library';
+import { WallpaperManager } from './wallpapers/manager';
 
 const SESSION_TTL_MS = 90 * 24 * 60 * 60 * 1000;
 const ADDRESS_CHECK_INTERVAL_MS = 60_000;
@@ -67,12 +70,25 @@ async function main(): Promise<void> {
     log.child({ module: 'edge' }),
   );
   const wallpapers = new WallpaperLibrary(config.paths.wallpapers, log);
+  const wallpaperManager = new WallpaperManager(wallpapers, settings, config.paths.thumbs, log);
+  const remote = new RemoteControl(browser, createInputDriver(log.child({ module: 'input' })));
   const hub = new StateHub(
     {
       browser,
+      remote,
       homeUrl,
-      slideIntervalSec: () => settings.get().slideIntervalSec,
-      wallpapers: () => wallpapers.list(settings.get().wallpaperOrder),
+      settings: {
+        slideIntervalSec: () => settings.get().slideIntervalSec,
+        setSlideInterval: async (seconds) => {
+          await settings.update((s) => ({ ...s, slideIntervalSec: seconds }));
+        },
+      },
+      wallpapers: {
+        list: () => wallpapers.list(settings.get().wallpaperOrder),
+        has: (id) => wallpaperManager.exists(id),
+        remove: (id) => wallpaperManager.remove(id),
+        reorder: (order) => wallpaperManager.reorder(order),
+      },
       pairing: () => connection.pairing(auth.pairingPin, tls.caFingerprint),
     },
     log.child({ module: 'hub' }),
@@ -94,6 +110,7 @@ async function main(): Promise<void> {
     log,
     hub,
     auth,
+    wallpapers: wallpaperManager,
     tls: { key: certificate.keyPem, cert: certificate.certPem },
   });
   const setupApp = buildSetupApp(log, {

@@ -5,8 +5,13 @@ import { generatePin, hashPin, verifyPin } from './pin';
 import type { LoginLimiter } from './rate-limit';
 import type { SessionStore } from './sessions';
 
-export type LoginResult =
-  { ok: true; token: string } | { ok: false; reason: 'invalid' | 'locked'; retryAfterSec?: number };
+export interface PinFailure {
+  ok: false;
+  reason: 'invalid' | 'locked';
+  retryAfterSec?: number;
+}
+
+export type LoginResult = { ok: true; token: string } | PinFailure;
 
 const GLOBAL_KEY = '*';
 
@@ -46,6 +51,47 @@ export class AuthService extends EventEmitter<{ pairingChange: [] }> {
   }
 
   async login(pin: string, ip: string, label: string): Promise<LoginResult> {
+    const check = await this.checkPin(pin, ip);
+    if (!check.ok) return check;
+
+    const token = await this.sessions.create(label);
+    if (this.pairingPinValue !== null) {
+      await this.settings.update((s) => ({
+        ...s,
+        auth: s.auth && { ...s.auth, pairingPending: false },
+      }));
+      this.pairingPinValue = null;
+      this.emit('pairingChange');
+      this.log.info('Appairage terminé');
+    }
+    this.log.info({ ip, label }, 'Nouvelle session');
+    return { ok: true, token };
+  }
+
+  /**
+   * Change le PIN après vérification de l'actuel (soumise au même limiteur que la connexion).
+   * Toutes les sessions sont révoquées ; une nouvelle est ouverte pour le téléphone appelant.
+   */
+  async changePin(current: string, next: string, ip: string, label: string): Promise<LoginResult> {
+    const check = await this.checkPin(current, ip);
+    if (!check.ok) return check;
+
+    const pinHash = await hashPin(next);
+    await this.settings.update((s) => ({ ...s, auth: { pinHash, pairingPending: false } }));
+    await this.sessions.revokeAll();
+    this.log.info({ ip }, 'PIN modifié, sessions révoquées');
+    return { ok: true, token: await this.sessions.create(label) };
+  }
+
+  authenticate(token: string | undefined): boolean {
+    return this.sessions.validate(token);
+  }
+
+  logout(token: string): Promise<void> {
+    return this.sessions.revoke(token);
+  }
+
+  private async checkPin(pin: string, ip: string): Promise<{ ok: true } | PinFailure> {
     for (const [limiter, key] of [
       [this.ipLimiter, ip],
       [this.globalLimiter, GLOBAL_KEY],
@@ -57,31 +103,13 @@ export class AuthService extends EventEmitter<{ pairingChange: [] }> {
     }
 
     const auth = this.settings.get().auth;
-    const valid = auth ? await verifyPin(pin, auth.pinHash) : false;
-    if (!valid || !auth) {
+    if (!auth || !(await verifyPin(pin, auth.pinHash))) {
       this.ipLimiter.recordFailure(ip);
       this.globalLimiter.recordFailure(GLOBAL_KEY);
       this.log.warn({ ip }, 'PIN incorrect');
       return { ok: false, reason: 'invalid' };
     }
-
     this.ipLimiter.recordSuccess(ip);
-    const token = await this.sessions.create(label);
-    if (auth.pairingPending) {
-      await this.settings.update((s) => ({ ...s, auth: { ...auth, pairingPending: false } }));
-      this.pairingPinValue = null;
-      this.emit('pairingChange');
-      this.log.info('Appairage terminé');
-    }
-    this.log.info({ ip, label }, 'Nouvelle session');
-    return { ok: true, token };
-  }
-
-  authenticate(token: string | undefined): boolean {
-    return this.sessions.validate(token);
-  }
-
-  logout(token: string): Promise<void> {
-    return this.sessions.revoke(token);
+    return { ok: true };
   }
 }

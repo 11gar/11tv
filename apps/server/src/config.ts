@@ -36,6 +36,7 @@ export interface AppConfig {
     settings: string;
     sessions: string;
     wallpapers: string;
+    thumbs: string;
     certs: string;
     logs: string;
     edgeProfile: string;
@@ -82,6 +83,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
       settings: path.join(data, 'settings.json'),
       sessions: path.join(data, 'sessions.json'),
       wallpapers: path.join(data, 'wallpapers'),
+      thumbs: path.join(data, 'thumbs'),
       certs: path.join(data, 'certs'),
       logs: path.join(data, 'logs'),
       edgeProfile: path.join(data, 'edge-profile'),

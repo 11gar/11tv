@@ -149,4 +149,27 @@ describe('AuthService', () => {
     const locked = await auth.login(pin, '192.168.1.20', 't');
     expect(locked).toMatchObject({ ok: false, reason: 'locked' });
   });
+
+  it('change le PIN, révoque toutes les sessions et en rouvre une pour l’appelant', async () => {
+    const { auth } = await setup();
+    const pin = auth.pairingPin!;
+    const other = await auth.login(pin, '192.168.1.21', 'autre téléphone');
+    if (!other.ok) throw new Error('connexion impossible');
+
+    const wrong = await auth.changePin(
+      pin === '0000' ? '1111' : '0000',
+      '2468',
+      '192.168.1.20',
+      't',
+    );
+    expect(wrong).toEqual({ ok: false, reason: 'invalid' });
+
+    const changed = await auth.changePin(pin, '2468', '192.168.1.20', 't');
+    expect(changed.ok).toBe(true);
+    expect(auth.authenticate(other.token)).toBe(false);
+    if (changed.ok) expect(auth.authenticate(changed.token)).toBe(true);
+
+    expect((await auth.login(pin, '192.168.1.22', 't')).ok).toBe(false);
+    expect((await auth.login('2468', '192.168.1.22', 't')).ok).toBe(true);
+  });
 });

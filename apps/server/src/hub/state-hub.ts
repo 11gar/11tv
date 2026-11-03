@@ -10,6 +10,8 @@ import {
   type Wallpaper,
 } from '@11tv/shared';
 import type { BrowserController } from '../browser/browser-controller';
+import { UserFacingError } from '../errors';
+import type { RemoteControl } from '../input/remote-control';
 import type { Logger } from '../log';
 
 export type ClientRole = 'tv' | 'remote';
@@ -19,11 +21,28 @@ export interface HubClient {
   send(message: ServerMessage | ServerMessage<TvState>): void;
 }
 
-export interface HubSources {
+/** Ce que le hub utilise des réglages et des fonds d'écran (interfaces étroites, testables). */
+export interface HubSettings {
+  slideIntervalSec(): number;
+  setSlideInterval(seconds: number): Promise<void>;
+}
+
+export interface HubWallpapers {
+  list(): Wallpaper[];
+  has(id: string): boolean;
+  remove(id: string): Promise<void>;
+  reorder(order: readonly string[]): Promise<void>;
+}
+
+export interface HubDeps {
   browser: BrowserController;
+  remote: Pick<
+    RemoteControl,
+    'pointerAvailable' | 'key' | 'text' | 'back' | 'move' | 'click' | 'scroll' | 'volume'
+  >;
+  settings: HubSettings;
+  wallpapers: HubWallpapers;
   homeUrl: string;
-  slideIntervalSec: () => number;
-  wallpapers: () => Wallpaper[];
   pairing: () => PairingInfo | null;
 }
 
@@ -34,23 +53,23 @@ export function viewForUrl(url: string, homeUrl: string): View {
 }
 
 /**
- * Point central : reçoit les commandes des clients, pilote le navigateur et pousse l'état
- * complet à chaque changement. La TV reçoit une vue enrichie (fonds d'écran, appairage) que
- * le téléphone ne voit pas.
+ * Point central : reçoit les commandes des clients, les transmet au navigateur, à la
+ * télécommande ou aux réglages, et pousse l'état complet à chaque changement. La TV reçoit
+ * en plus les informations d'appairage, que le téléphone ne voit jamais.
  */
 export class StateHub {
   private readonly clients = new Set<HubClient>();
   private view: View = 'home';
 
   constructor(
-    private readonly sources: HubSources,
+    private readonly deps: HubDeps,
     private readonly log: Logger,
   ) {
-    sources.browser.on('status', () => {
+    deps.browser.on('status', () => {
       this.broadcast();
     });
-    sources.browser.on('navigated', (url) => {
-      const view = viewForUrl(url, sources.homeUrl);
+    deps.browser.on('navigated', (url) => {
+      const view = viewForUrl(url, deps.homeUrl);
       if (view === this.view) return;
       this.view = view;
       this.log.debug({ view, url }, 'Vue changée');
@@ -69,17 +88,43 @@ export class StateHub {
   }
 
   async handle(message: ClientMessage): Promise<void> {
+    const { browser, remote, settings, wallpapers } = this.deps;
     switch (message.type) {
       case 'launch': {
         const service = getService(message.service);
         this.log.info({ service: service.id }, 'Lancement d’un service');
-        await this.sources.browser.navigate(service.url);
-        return;
+        return browser.navigate(service.url);
       }
       case 'home':
         this.log.info('Retour à l’accueil');
-        await this.sources.browser.navigate(this.sources.homeUrl);
+        return browser.navigate(this.deps.homeUrl);
+      case 'history-back':
+        return remote.back();
+
+      case 'key':
+        return remote.key(message.key);
+      case 'text':
+        return remote.text(message.text, message.submit);
+      case 'pointer-move':
+        remote.move(message.dx, message.dy);
         return;
+      case 'pointer-click':
+        remote.click(message.button);
+        return;
+      case 'pointer-scroll':
+        remote.scroll(message.dy);
+        return;
+      case 'volume':
+        remote.volume(message.action);
+        return;
+
+      case 'set-slide-interval':
+        return settings.setSlideInterval(message.seconds);
+      case 'delete-wallpaper':
+        if (!wallpapers.has(message.id)) throw new UserFacingError('Ce fond d’écran n’existe plus');
+        return wallpapers.remove(message.id);
+      case 'reorder-wallpapers':
+        return wallpapers.reorder(message.order);
     }
   }
 
@@ -91,18 +136,17 @@ export class StateHub {
   private appState(): AppState {
     return {
       view: this.view,
-      browser: this.sources.browser.status,
-      slideIntervalSec: this.sources.slideIntervalSec(),
+      browser: this.deps.browser.status,
+      slideIntervalSec: this.deps.settings.slideIntervalSec(),
+      wallpapers: this.deps.wallpapers.list(),
+      pointerAvailable: this.deps.remote.pointerAvailable,
     };
   }
 
   private sendState(client: HubClient): void {
     const state = this.appState();
     if (client.role === 'tv') {
-      client.send({
-        type: 'state',
-        state: { ...state, wallpapers: this.sources.wallpapers(), pairing: this.sources.pairing() },
-      });
+      client.send({ type: 'state', state: { ...state, pairing: this.deps.pairing() } });
     } else {
       client.send({ type: 'state', state });
     }

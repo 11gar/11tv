@@ -6,3 +6,7 @@ packages:
 onlyBuiltDependencies:
   - esbuild
   - sharp
+
+# koffi embarque ses binaires précompilés : son script d'installation est inutile.
+ignoredBuiltDependencies:
+  - koffi

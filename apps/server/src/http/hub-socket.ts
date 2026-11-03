@@ -1,8 +1,8 @@
 import { HEARTBEAT_INTERVAL_MS, WS_PATH } from '@11tv/shared';
 import { clientMessageSchema } from '@11tv/shared/schemas';
-import type { FastifyInstance, preValidationAsyncHookHandler } from 'fastify';
+import type { FastifyInstance, FastifyRequest, preValidationAsyncHookHandler } from 'fastify';
 import type { RawData } from 'ws';
-import { BrowserUnavailableError } from '../browser/browser-controller';
+import { UserFacingError } from '../errors';
 import type { ClientRole, HubClient, StateHub } from '../hub/state-hub';
 
 function decode(data: RawData): string {
@@ -15,16 +15,32 @@ function decode(data: RawData): string {
  * morts) et un message « heartbeat » (pour que le client détecte un serveur muet, les pings
  * de protocole étant invisibles côté navigateur).
  */
+export interface HubSocketAuth {
+  /** Vérifié avant l'ouverture de la connexion. */
+  preValidation: preValidationAsyncHookHandler;
+  /** Revérifié à chaque message et à chaque heartbeat (session révoquée entre-temps). */
+  stillAuthorized: (req: FastifyRequest) => boolean;
+}
+
+/** Code de fermeture applicatif : session révoquée. */
+const CLOSE_UNAUTHORIZED = 4401;
+
 export function registerHubSocket(
   app: FastifyInstance,
   hub: StateHub,
   role: ClientRole,
-  preValidation?: preValidationAsyncHookHandler,
+  auth?: HubSocketAuth,
 ): void {
   app.get(
     WS_PATH,
-    { websocket: true, ...(preValidation ? { preValidation } : {}) },
+    { websocket: true, ...(auth ? { preValidation: auth.preValidation } : {}) },
     (socket, req) => {
+      const authorized = () => {
+        if (!auth || auth.stillAuthorized(req)) return true;
+        log.info('Session révoquée, connexion fermée');
+        socket.close(CLOSE_UNAUTHORIZED, 'Session révoquée');
+        return false;
+      };
       const log = req.log.child({ ws: role });
       const client: HubClient = {
         role,
@@ -45,12 +61,14 @@ export function registerHubSocket(
           socket.terminate();
           return;
         }
+        if (!authorized()) return;
         alive = false;
         socket.ping();
         client.send({ type: 'heartbeat' });
       }, HEARTBEAT_INTERVAL_MS);
 
       socket.on('message', (data) => {
+        if (!authorized()) return;
         let parsed: unknown;
         try {
           parsed = JSON.parse(decode(data));
@@ -63,7 +81,7 @@ export function registerHubSocket(
           return;
         }
         hub.handle(message.data).catch((err: unknown) => {
-          if (err instanceof BrowserUnavailableError) {
+          if (err instanceof UserFacingError) {
             client.send({ type: 'error', message: err.message });
             return;
           }

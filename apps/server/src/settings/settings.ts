@@ -51,11 +51,22 @@ export class SettingsService extends EventEmitter<{ change: [Settings] }> {
     return this.current;
   }
 
-  async update(change: (draft: Settings) => Settings): Promise<Settings> {
-    const next = settingsSchema.parse(change(structuredClone(this.current)));
-    await this.file.save(next);
-    this.current = next;
-    this.emit('change', next);
-    return next;
+  /**
+   * Applique une modification. Les modifications sont sérialisées : chacune part de l'état
+   * laissé par la précédente, sinon deux mises à jour simultanées (ordre des fonds d'écran et
+   * délai, par exemple) s'écraseraient.
+   */
+  update(change: (draft: Settings) => Settings): Promise<Settings> {
+    const task = this.queue.then(async () => {
+      const next = settingsSchema.parse(change(structuredClone(this.current)));
+      await this.file.save(next);
+      this.current = next;
+      this.emit('change', next);
+      return next;
+    });
+    this.queue = task.catch(() => undefined);
+    return task;
   }
+
+  private queue: Promise<unknown> = Promise.resolve();
 }

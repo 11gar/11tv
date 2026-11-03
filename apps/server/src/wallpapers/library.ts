@@ -7,6 +7,7 @@ import type { Logger } from '../log';
 const IMAGE_EXTENSIONS = new Set(['.jpg', '.jpeg', '.png', '.webp', '.avif']);
 
 export const WALLPAPER_ROUTE = '/wallpapers/';
+export const WALLPAPER_API_ROUTE = '/api/wallpapers/';
 
 /** Fichiers dans l'ordre choisi, puis les autres par ordre alphabétique. */
 export function orderWallpapers(files: string[], order: readonly string[]): string[] {
@@ -47,7 +48,21 @@ export class WallpaperLibrary {
     return orderWallpapers(this.files, order).map((name) => ({
       id: name,
       url: `${WALLPAPER_ROUTE}${encodeURIComponent(name)}`,
+      thumbUrl: `${WALLPAPER_API_ROUTE}${encodeURIComponent(name)}/thumb`,
     }));
+  }
+
+  /**
+   * Vrai si `id` est un fond d'écran connu. C'est la seule validation nécessaire avant de
+   * construire un chemin : un id inconnu (« ../settings.json ») est rejeté.
+   */
+  has(id: string): boolean {
+    return this.files.includes(id);
+  }
+
+  pathOf(id: string): string {
+    if (!this.has(id)) throw new Error(`Fond d’écran inconnu : ${id}`);
+    return path.join(this.dir, id);
   }
 
   close(): void {
@@ -55,7 +70,8 @@ export class WallpaperLibrary {
     if (this.debounce) clearTimeout(this.debounce);
   }
 
-  private async scan(): Promise<void> {
+  /** Relit le dossier tout de suite, sans attendre la surveillance de fichiers. */
+  async scan(): Promise<void> {
     try {
       const entries = await readdir(this.dir, { withFileTypes: true });
       this.files = entries.filter((e) => e.isFile() && isWallpaperFile(e.name)).map((e) => e.name);

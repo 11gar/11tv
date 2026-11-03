@@ -3,15 +3,17 @@
 Interface TV personnalisée pour une Surface Pro 8 branchée à la télé, pilotée depuis un
 téléphone Android (PWA) sur le Wi-Fi local.
 
-> **État : phase 1 (prototype).** Écran d'accueil TV (fonds d'écran en fondu, date et heure),
-> lancement de YouTube, YouTube Music, Disney+ et Prime Video depuis le téléphone, retour à
-> l'accueil, PWA protégée par PIN. Feuille de route en bas de page.
+> **État : phase 2.** Écran d'accueil TV (fonds d'écran en fondu, date et heure), lancement
+> de YouTube, YouTube Music, Disney+ et Prime Video depuis le téléphone, télécommande
+> (pavé, clavier, trackpad, volume), réglages (fonds d'écran, délai, PIN), PWA protégée par
+> PIN. Feuille de route en bas de page.
 
 ## Sommaire
 
 - [Fonctionnement](#fonctionnement)
 - [Développement](#développement)
 - [Installation sur la Surface](#installation-sur-la-surface)
+- [Utilisation](#utilisation)
 - [Installation sur le téléphone](#installation-sur-le-téléphone)
 - [Configuration](#configuration)
 - [Sécurité](#sécurité)
@@ -125,9 +127,30 @@ Au premier démarrage, la TV affiche un PIN d'appairage à 6 chiffres. Pour en r
    aléatoires » pour ce réseau : la box garde alors plus volontiers la même IP.
 7. **Lancement** : `pnpm start`. Windows demande d'autoriser Node sur le pare-feu :
    cochez **Réseaux privés uniquement**.
-8. **Fonds d'écran** : déposez vos images (JPG, PNG, WebP, AVIF) dans
-   `%LOCALAPPDATA%\11TV\wallpapers` ; la TV se met à jour seule. (Envoi depuis le
-   téléphone : phase 2.)
+8. **Fonds d'écran** : ajoutez-les depuis le téléphone (Réglages), ou déposez des images
+   (JPG, PNG, WebP, AVIF) dans `%LOCALAPPDATA%\11TV\wallpapers` ; la TV se met à jour seule.
+
+## Utilisation
+
+**Accueil** : lance un service sur la TV ou revient à l'écran d'accueil.
+
+**Télécommande**, en trois modes :
+
+| Mode     | Usage                                                                                                                                |
+| -------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| Pavé     | Flèches (maintenir pour répéter), OK, Retour (Échap), Lecture (Espace), Précédent (page précédente), élément suivant/précédent (Tab) |
+| Trackpad | Glisser : curseur · toucher : clic · deux doigts : défiler · toucher à deux doigts : clic droit                                      |
+| Clavier  | Cliquez d'abord dans le champ de recherche (trackpad), puis tapez et envoyez                                                         |
+
+Le volume (−, muet, +) pilote le volume de Windows ; celui de la TV reste sur sa télécommande.
+
+Les touches passent par Edge lui-même : elles fonctionnent même si Edge n'a pas le focus.
+La souris et le volume passent par Windows (`SendInput`) : le serveur doit tourner dans la
+session de l'utilisateur, pas comme service.
+
+**Réglages** : ajout d'images (JPEG, PNG ou WebP ; elles sont réduites à 3840 px, converties
+en WebP et débarrassées de leurs métadonnées, position GPS comprise), ordre, suppression,
+délai de défilement, changement de PIN (les autres téléphones sont déconnectés).
 
 ## Installation sur le téléphone
 
@@ -165,6 +188,7 @@ Données (jamais dans le dépôt), dans `%LOCALAPPDATA%\11TV\` :
 | `sessions.json` | Empreintes des jetons de session des téléphones |
 | `certs/`        | Autorité locale et certificat du serveur        |
 | `wallpapers/`   | Fonds d'écran                                   |
+| `thumbs/`       | Vignettes des fonds d'écran (régénérables)      |
 | `edge-profile/` | Profil Edge du kiosque (cookies des services)   |
 | `logs/11tv.log` | Journaux JSON                                   |
 
@@ -185,7 +209,7 @@ Données (jamais dans le dépôt), dans `%LOCALAPPDATA%\11TV\` :
 
 - [x] **Phase 1** : serveur, écran d'accueil TV, lancement des services, retour à l'accueil,
       PWA avec PIN.
-- [ ] **Phase 2** : télécommande (pavé, OK, retour, clavier, trackpad), réglages des fonds
+- [x] **Phase 2** : télécommande (pavé, OK, retour, clavier, trackpad), réglages des fonds
       d'écran et du délai, changement de PIN.
 - [ ] **Phase 3** : YouTube Music (dernière écoute, lancement, contrôles).
 - [ ] **Phase 4** : démarrage automatique, redémarrage nocturne, robustesse.

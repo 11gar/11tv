@@ -83,10 +83,27 @@ export class EdgeBrowser extends EventEmitter<BrowserEvents> implements BrowserC
   }
 
   async navigate(url: string): Promise<void> {
-    const page = this.page;
-    if (!page || page.isClosed()) throw new BrowserUnavailableError();
+    const page = this.activePage();
     await page.bringToFront();
     await page.goto(url, { waitUntil: 'commit', timeout: NAVIGATION_TIMEOUT_MS });
+  }
+
+  async goBack(): Promise<void> {
+    await this.activePage().goBack({ waitUntil: 'commit', timeout: NAVIGATION_TIMEOUT_MS });
+  }
+
+  async pressKey(key: string): Promise<void> {
+    await this.activePage().keyboard.press(key);
+  }
+
+  async insertText(text: string): Promise<void> {
+    await this.activePage().keyboard.insertText(text);
+  }
+
+  private activePage(): Page {
+    const page = this.page;
+    if (!page || page.isClosed()) throw new BrowserUnavailableError();
+    return page;
   }
 
   private setStatus(status: BrowserStatus): void {
