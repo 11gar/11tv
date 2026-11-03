@@ -1,0 +1,225 @@
+/* Interface « à 3 mètres » : tailles en vw/vh pour s'adapter à la résolution de la TV. */
+:root {
+  color-scheme: dark;
+  --text: #f4f5f8;
+  --text-dim: rgba(244, 245, 248, 0.72);
+  --panel: rgba(12, 14, 20, 0.72);
+  --fade-ms: 2000ms;
+  font-family: 'Segoe UI Variable Display', 'Segoe UI', system-ui, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  height: 100%;
+  overflow: hidden;
+  background: #000;
+  color: var(--text);
+  cursor: none;
+}
+
+.screen {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* --- Fonds d'écran ------------------------------------------------------- */
+
+.wallpaper {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center;
+  animation: fade-in var(--fade-ms) ease-in-out both;
+}
+
+.wallpaper--fallback {
+  background: linear-gradient(120deg, #101a33, #2a1438, #0f2c33, #101a33);
+  background-size: 400% 400%;
+  animation: drift 60s ease-in-out infinite;
+}
+
+/* Assombrit le bas et le haut pour la lisibilité de l'horloge et des tuiles. */
+.veil {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(to bottom, rgba(0, 0, 0, 0.45), transparent 30%),
+    linear-gradient(to top, rgba(0, 0, 0, 0.6), transparent 45%);
+  pointer-events: none;
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes drift {
+  0%,
+  100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+/* --- Horloge ------------------------------------------------------------- */
+
+.clock {
+  position: absolute;
+  top: 5vh;
+  right: 4vw;
+  text-align: right;
+  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.5);
+  transition: transform 3s ease;
+}
+
+.clock__time {
+  font-size: 5.5vw;
+  font-weight: 300;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.clock__date {
+  margin-top: 0.6vh;
+  font-size: 1.6vw;
+  color: var(--text-dim);
+}
+
+/* --- Tuiles des services ------------------------------------------------- */
+
+.tiles {
+  position: absolute;
+  left: 4vw;
+  right: 4vw;
+  bottom: 7vh;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 2vw;
+}
+
+.tile {
+  aspect-ratio: 16 / 9;
+  border: 0;
+  border-radius: 1.2vw;
+  background:
+    linear-gradient(145deg, color-mix(in srgb, var(--accent) 55%, transparent), transparent 70%),
+    var(--panel);
+  backdrop-filter: blur(12px);
+  color: var(--text);
+  font: inherit;
+  cursor: none;
+  outline: none;
+  transition:
+    transform 180ms ease,
+    box-shadow 180ms ease;
+}
+
+.tile:focus-visible,
+.tile:focus {
+  transform: scale(1.07);
+  box-shadow:
+    0 0 0 0.25vw #fff,
+    0 1.2vw 3vw color-mix(in srgb, var(--accent) 45%, transparent);
+}
+
+.tile__name {
+  font-size: 1.9vw;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+/* --- Appairage ----------------------------------------------------------- */
+
+.pairing {
+  position: absolute;
+  top: 5vh;
+  left: 4vw;
+  width: 34vw;
+  padding: 2vw;
+  border-radius: 1.2vw;
+  background: var(--panel);
+  backdrop-filter: blur(16px);
+  animation: fade-in 600ms ease both;
+}
+
+.pairing__title {
+  margin: 0 0 1.4vw;
+  font-size: 1.8vw;
+  font-weight: 600;
+}
+
+.pairing__body {
+  display: flex;
+  gap: 1.5vw;
+  align-items: flex-start;
+}
+
+.pairing__qr {
+  flex: 0 0 10vw;
+  width: 10vw;
+  padding: 0.4vw;
+  background: #fff;
+  border-radius: 0.6vw;
+}
+
+.pairing__qr svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.pairing__steps {
+  margin: 0;
+  padding-left: 1.4vw;
+  font-size: 1.05vw;
+  line-height: 1.5;
+  color: var(--text-dim);
+}
+
+.pairing__steps strong {
+  color: var(--text);
+  word-break: break-all;
+}
+
+.pairing__pin {
+  margin-top: 1.4vw;
+  font-size: 4vw;
+  font-weight: 600;
+  letter-spacing: 0.4em;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.pairing__fingerprint {
+  margin: 1vw 0 0;
+  font-size: 0.65vw;
+  color: var(--text-dim);
+  word-break: break-all;
+}
+
+/* --- Divers -------------------------------------------------------------- */
+
+.status-badge {
+  position: absolute;
+  top: 2vh;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 0.5vw 1.2vw;
+  border-radius: 999px;
+  background: var(--panel);
+  font-size: 1vw;
+  color: var(--text-dim);
+}

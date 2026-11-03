@@ -1,0 +1,8 @@
+packages:
+  - apps/*
+  - packages/*
+
+# pnpm 10 n'exécute les scripts d'installation que pour les paquets listés ici.
+onlyBuiltDependencies:
+  - esbuild
+  - sharp

@@ -1,0 +1,36 @@
+{
+  "name": "11tv",
+  "private": true,
+  "type": "module",
+  "description": "11TV : interface TV personnalisée pilotée depuis un téléphone",
+  "packageManager": "pnpm@10.34.9",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "dev": "pnpm --filter @11tv/server dev",
+    "dev:tv": "pnpm --filter @11tv/tv dev",
+    "dev:mobile": "pnpm --filter @11tv/mobile dev",
+    "build": "pnpm -r build",
+    "start": "pnpm --filter @11tv/server start",
+    "pin:reset": "pnpm --filter @11tv/server pin:reset",
+    "typecheck": "pnpm -r typecheck",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "check": "pnpm typecheck && pnpm lint && pnpm format:check && pnpm test"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@types/node": "^24.0.0",
+    "eslint": "^10.14.0",
+    "eslint-config-prettier": "^10.1.0",
+    "globals": "^17.14.0",
+    "prettier": "^3.6.0",
+    "typescript": "^5.9.0",
+    "typescript-eslint": "^8.35.0",
+    "vitest": "^3.2.0"
+  }
+}

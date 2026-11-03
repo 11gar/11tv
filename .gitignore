@@ -1,0 +1,12 @@
+node_modules/
+dist/
+dev-dist/
+coverage/
+*.log
+
+# Données locales (réglages, sessions, certificats, profil Edge) : jamais dans le dépôt
+.data/
+.env
+*.pem
+*.crt
+*.key

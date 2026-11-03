@@ -1,0 +1,16 @@
+{
+  "name": "@11tv/web",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@11tv/shared": "workspace:*",
+    "preact": "^10.27.0"
+  }
+}
