@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!--
+    Icône adaptative Android : fond plein jusqu'aux bords (le système découpe lui-même la
+    forme), logo réduit pour rester dans la zone visible (cercle central d'environ 2/3).
+  -->
+  <defs>
+    <linearGradient id="sky" x1="1" y1="0" x2="0.3" y2="1">
+      <stop offset="0" stop-color="#d9d6cf"/>
+      <stop offset="0.45" stop-color="#9a9a9e"/>
+      <stop offset="1" stop-color="#3a4252"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0.85" cy="0.55" r="0.55">
+      <stop offset="0" stop-color="#d9927a" stop-opacity="0.55"/>
+      <stop offset="1" stop-color="#d9927a" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="512" height="512" fill="url(#sky)"/>
+  <rect width="512" height="512" fill="url(#glow)"/>
+  <g transform="translate(256 256) scale(0.62) translate(-256 -255)">
+    <g fill="none" stroke="#fff" stroke-width="68" stroke-linecap="round">
+      <path d="M122 212 186 152M256 212 320 152M187 268v90M323 268v90"/>
+    </g>
+    <circle cx="388" cy="211" r="36" fill="#fff"/>
+  </g>
+</svg>

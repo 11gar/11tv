@@ -81,18 +81,60 @@ body {
   position: absolute;
   left: 50%;
   bottom: 4.5vh;
-  display: flex;
-  align-items: center;
-  gap: 1vw;
   width: 24vw;
-  padding: 0.6vw 1.1vw 0.6vw 0.6vw;
+  /* En bas, la place de la barre de progression (4 px), collée au bord. */
+  padding: 0.6vw 1.1vw calc(0.6vw + 4px) 0.6vw;
   border-radius: 0.9vw;
+  overflow: hidden;
   transition: transform 3s ease;
   animation: fade-in 800ms ease both;
 }
 
 .now-playing--hidden {
   animation: fade-out 800ms ease both;
+}
+
+.now-playing__content {
+  display: flex;
+  align-items: center;
+  gap: 1vw;
+  transition:
+    filter 400ms ease,
+    opacity 400ms ease;
+}
+
+/* En pause : contenu flouté, pictogramme pause par-dessus. */
+.now-playing--paused .now-playing__content {
+  filter: blur(0.35vw);
+  opacity: 0.7;
+}
+
+.now-playing__pause {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 2vw;
+  height: 2vw;
+  transform: translate(-50%, -50%);
+  fill: currentColor;
+  filter: drop-shadow(0 1px 4px rgba(0, 0, 0, 0.3));
+  animation: fade-in 400ms ease both;
+}
+
+.now-playing__progress {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.18);
+}
+
+.now-playing__bar {
+  height: 100%;
+  background: rgba(255, 255, 255, 0.85);
+  transform-origin: left;
+  transition: transform 500ms linear;
 }
 
 .now-playing__art {
@@ -132,13 +174,6 @@ body {
   margin-top: 0.1vw;
   font-size: 0.8vw;
   color: var(--text-dim);
-}
-
-.now-playing__state {
-  flex: 0 0 auto;
-  width: 1.4vw;
-  height: 1.4vw;
-  fill: currentColor;
 }
 
 /* --- Appairage ----------------------------------------------------------- */

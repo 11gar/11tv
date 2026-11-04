@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "icons": "pwa-assets-generator --preset minimal-2023 public/icon.svg",
+    "icons": "pwa-assets-generator --preset minimal-2023 public/icon.svg && node scripts/full-bleed-icons.mjs",
     "typecheck": "tsc -p tsconfig.json"
   },
   "dependencies": {

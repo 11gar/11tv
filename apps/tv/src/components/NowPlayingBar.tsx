@@ -1,4 +1,5 @@
 import { NOW_PLAYING_IDLE_HIDE_MS, type NowPlaying } from '@11tv/shared';
+import { usePlaybackPosition } from '@11tv/web';
 import { useEffect, useRef, useState } from 'preact/hooks';
 import { usePixelShift } from '../hooks/use-pixel-shift';
 
@@ -27,8 +28,9 @@ function useVisible(nowPlaying: NowPlaying | null): boolean {
 }
 
 /**
- * Pastille « En cours de lecture » en bas de l'écran : pochette, titre, artiste et l'état
- * de lecture. Elle garde le dernier titre pendant son fondu de sortie.
+ * Carte « En cours de lecture » en bas de l'écran : pochette, titre, artiste et une fine
+ * barre de progression collée au bord inférieur. En pause, son contenu est flouté sous un
+ * pictogramme pause. Elle garde le dernier titre pendant son fondu de sortie.
  */
 export function NowPlayingBar({ nowPlaying }: Props) {
   const visible = useVisible(nowPlaying);
@@ -36,33 +38,38 @@ export function NowPlayingBar({ nowPlaying }: Props) {
   const lastShown = useRef<NowPlaying | null>(null);
   if (visible && nowPlaying) lastShown.current = nowPlaying;
   const track = visible ? nowPlaying : lastShown.current;
+  const position = usePlaybackPosition(track);
   if (!track) return null;
+
+  const progress = track.durationSec > 0 ? Math.min(1, position / track.durationSec) : 0;
+  const classes = ['now-playing', 'glass'];
+  if (!visible) classes.push('now-playing--hidden');
+  if (!track.playing) classes.push('now-playing--paused');
 
   return (
     <section
-      class={visible ? 'now-playing glass' : 'now-playing now-playing--hidden glass'}
+      class={classes.join(' ')}
       style={{ transform: `translateX(-50%) ${shift}` }}
-      aria-label="En cours de lecture"
+      aria-label={track.playing ? 'En cours de lecture' : 'En pause'}
       aria-hidden={!visible}
     >
-      <div class="now-playing__art">
-        {track.artworkUrl && <img src={track.artworkUrl} alt="" />}
+      <div class="now-playing__content">
+        <div class="now-playing__art">
+          {track.artworkUrl && <img src={track.artworkUrl} alt="" />}
+        </div>
+        <div class="now-playing__text">
+          <div class="now-playing__title">{track.title}</div>
+          <div class="now-playing__artist">{track.artist}</div>
+        </div>
       </div>
-      <div class="now-playing__text">
-        <div class="now-playing__title">{track.title}</div>
-        <div class="now-playing__artist">{track.artist}</div>
-      </div>
-      <svg
-        class="now-playing__state"
-        viewBox="0 0 24 24"
-        aria-label={track.playing ? 'Lecture' : 'En pause'}
-      >
-        {track.playing ? (
-          <path d="M8 5.5v13a1 1 0 0 0 1.5.9l10.2-6.5a1 1 0 0 0 0-1.8L9.5 4.6A1 1 0 0 0 8 5.5Z" />
-        ) : (
+      {!track.playing && (
+        <svg class="now-playing__pause" viewBox="0 0 24 24" aria-hidden="true">
           <path d="M7 5h3.2v14H7zM13.8 5H17v14h-3.2z" />
-        )}
-      </svg>
+        </svg>
+      )}
+      <div class="now-playing__progress">
+        <div class="now-playing__bar" style={{ transform: `scaleX(${String(progress)})` }} />
+      </div>
     </section>
   );
 }
