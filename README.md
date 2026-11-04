@@ -109,12 +109,16 @@ de cette personne » → « Ajouter un utilisateur sans compte Microsoft ».
    ```bash
    npm install -g pnpm@10
    ```
+   pnpm s'installe **pour le seul compte qui lance cette commande** (dans
+   `%APPDATA%\npm`) : lancez-la depuis la session de la TV, même s'il est déjà installé sur
+   votre compte, puis ouvrez une nouvelle console. Si PowerShell refuse `pnpm` (« l'exécution
+   de scripts est désactivée »), tapez `pnpm.cmd` à la place.
 3. **Code** : clonez le dépôt, puis installez et construisez :
    ```bash
-   pnpm install
+   pnpm.cmd install
    ```
    ```bash
-   pnpm build
+   pnpm.cmd build
    ```
 4. **Phase 0, vérifications** : lancez le script et suivez la liste affichée (DRM, HDCP,
    connexion Google, mode kiosque) :
@@ -171,8 +175,8 @@ Depuis la session de la TV, sans droits d'administrateur :
 powershell -ExecutionPolicy Bypass -File scripts\update.ps1
 ```
 
-Le script récupère le code, réinstalle les dépendances, reconstruit, puis arrête le
-serveur : le lanceur le relance avec la nouvelle version quelques secondes plus tard.
+Le script récupère le code, réinstalle les dépendances (avec pnpm, ou via `npx` si pnpm
+n'est pas installé pour ce compte), reconstruit, puis arrête le serveur : le lanceur le relance avec la nouvelle version quelques secondes plus tard.
 
 ### Journaux
 

@@ -26,9 +26,21 @@ function Invoke-Native([string]$Title, [scriptblock]$Command) {
   if ($LASTEXITCODE -ne 0) { throw "$Title : échec (code $LASTEXITCODE)" }
 }
 
+# pnpm installé par « npm install -g » n'existe que pour le compte qui l'a installé : à
+# défaut, on passe par npx (fourni avec Node pour toute la machine) avec la version du dépôt.
+# Les .cmd fonctionnent quelle que soit la stratégie d'exécution des scripts PowerShell.
+$pnpm = (Get-Command pnpm.cmd -ErrorAction SilentlyContinue).Source
+$pnpmArgs = @()
+if (-not $pnpm) {
+  $version = (Get-Content (Join-Path $RepoDir 'package.json') -Raw | ConvertFrom-Json).packageManager
+  $pnpm = (Get-Command npx.cmd -ErrorAction Stop).Source
+  $pnpmArgs = @('--yes', $version)
+  Write-Host "pnpm introuvable pour ce compte : utilisation de npx ($version)." -ForegroundColor Yellow
+}
+
 Invoke-Native 'Récupération du code' { git pull --ff-only }
-Invoke-Native 'Dépendances' { pnpm install --frozen-lockfile }
-Invoke-Native 'Construction' { pnpm build }
+Invoke-Native 'Dépendances' { & $pnpm @pnpmArgs install --frozen-lockfile }
+Invoke-Native 'Construction' { & $pnpm @pnpmArgs build }
 
 $servers = Get-CimInstance Win32_Process -Filter "Name = 'node.exe'" |
   Where-Object { $_.CommandLine -like '*apps\server\dist\index.js*' }

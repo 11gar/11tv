@@ -32,6 +32,7 @@ if (-not $RepoDir) { $RepoDir = Split-Path $PSScriptRoot -Parent }
 $logDir = Join-Path $env:LOCALAPPDATA '11TV\logs'
 New-Item -ItemType Directory -Force -Path $logDir | Out-Null
 $logFile = Join-Path $logDir 'launcher.log'
+$stderrFile = Join-Path $logDir 'server-stderr.log'
 if ((Test-Path $logFile) -and (Get-Item $logFile).Length -gt 1MB) {
   Move-Item -Force $logFile "$logFile.1"
 }
@@ -83,8 +84,10 @@ Write-Log "Lanceur démarré ($RepoDir)"
 while ($true) {
   Stop-OrphanServer
   $started = Get-Date
+  # La sortie d'erreur est gardée : un plantage au démarrage survient avant que le serveur
+  # n'ouvre son propre journal.
   $server = Start-Process -FilePath $node -ArgumentList @('--enable-source-maps', "`"$entry`"") `
-    -WorkingDirectory $RepoDir -WindowStyle Hidden -PassThru
+    -WorkingDirectory $RepoDir -WindowStyle Hidden -PassThru -RedirectStandardError $stderrFile
   $null = $server.Handle # Sans cela, ExitCode reste vide une fois le processus terminé.
   Write-Log "Serveur démarré (PID $($server.Id))"
 
@@ -106,6 +109,8 @@ while ($true) {
 
   $ranSec = ((Get-Date) - $started).TotalSeconds
   Write-Log ('Serveur arrêté (code {0}) après {1:N0} s' -f $server.ExitCode, $ranSec)
+  $stderr = Get-Content $stderrFile -Tail 15 -ErrorAction SilentlyContinue
+  if ($stderr) { Write-Log ("Erreur du serveur :`r`n    " + ($stderr -join "`r`n    ")) }
   # Un serveur qui a tenu 10 minutes repart vite ; un serveur qui plante en boucle, de moins en moins.
   if ($ranSec -gt 600) { $delaySec = 5 } else { $delaySec = [Math]::Min($delaySec * 2, 120) }
   Write-Log "Relance dans $delaySec s"
