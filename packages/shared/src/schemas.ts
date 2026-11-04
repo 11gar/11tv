@@ -48,7 +48,4 @@ export const clientMessageSchema = z.discriminatedUnion('type', [
 
 export const loginRequestSchema = z.object({ pin }) satisfies z.ZodType<LoginRequest>;
 
-export const changePinRequestSchema = z.object({
-  current: pin,
-  next: pin,
-}) satisfies z.ZodType<ChangePinRequest>;
+export const changePinRequestSchema = z.object({ pin }) satisfies z.ZodType<ChangePinRequest>;

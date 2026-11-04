@@ -3,6 +3,7 @@ import type {
   ChangePinResponse,
   LoginResponse,
   SessionResponse,
+  UpdateStatus,
   UploadWallpaperResponse,
 } from '@11tv/shared';
 
@@ -33,6 +34,21 @@ export function changePin(request: ChangePinRequest): Promise<ChangePinResponse>
 
 export async function logout(): Promise<void> {
   await fetch('/api/auth/logout', { method: 'POST', credentials: 'same-origin' });
+}
+
+export async function fetchUpdateStatus(): Promise<UpdateStatus> {
+  const res = await fetch('/api/update', { credentials: 'same-origin' });
+  if (!res.ok) throw new Error(`Mise à jour : HTTP ${String(res.status)}`);
+  return (await res.json()) as UpdateStatus;
+}
+
+/** Lance la mise à jour ; renvoie l'état (« running », ou la raison d'un refus). */
+export async function startUpdate(): Promise<UpdateStatus> {
+  const res = await fetch('/api/update', { method: 'POST', credentials: 'same-origin' });
+  if (res.status !== 202 && res.status !== 409) {
+    throw new Error(`Mise à jour : HTTP ${String(res.status)}`);
+  }
+  return (await res.json()) as UpdateStatus;
 }
 
 export async function uploadWallpaper(file: File): Promise<UploadWallpaperResponse> {

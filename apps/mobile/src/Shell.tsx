@@ -16,6 +16,7 @@ import { RepeatButton } from './components/RepeatButton';
 import { ServiceIcon } from './components/ServiceIcon';
 import { Sheet } from './components/Sheet';
 import { Trackpad } from './components/Trackpad';
+import { consumeUpdateNotice } from './components/UpdateSettings';
 import { haptic } from './hooks/use-repeat';
 import { Music } from './screens/Music';
 import { Settings } from './screens/Settings';
@@ -87,6 +88,12 @@ export function Shell({ onSessionLost }: Props) {
   useEffect(() => {
     if (error) notify(error.message);
   }, [error, notify]);
+
+  // Page rechargée après une mise à jour lancée depuis les réglages.
+  useEffect(() => {
+    const notice = consumeUpdateNotice();
+    if (notice) notify(notice);
+  }, [notify]);
 
   useEffect(() => {
     if (!toast) return;

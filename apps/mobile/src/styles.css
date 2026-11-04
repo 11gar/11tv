@@ -160,6 +160,10 @@ button {
   background: rgba(255, 255, 255, 0.08);
 }
 
+.card > p {
+  margin: 0;
+}
+
 .card__title,
 .section-title {
   margin: 0;
@@ -687,6 +691,16 @@ button {
 
 .key--primary:disabled {
   opacity: 0.35;
+}
+
+.update-log {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.25);
+  font-size: 0.75rem;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
 }
 
 .diagnostics {

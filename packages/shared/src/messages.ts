@@ -90,12 +90,23 @@ export interface SessionResponse {
   authenticated: boolean;
 }
 
+/** Nouveau PIN permanent ; la session du téléphone suffit, l'actuel n'est pas demandé. */
 export interface ChangePinRequest {
-  current: string;
-  next: string;
+  pin: string;
 }
 
 export type ChangePinResponse = LoginResponse;
 
 export type UploadWallpaperResponse =
   { ok: true; wallpaper: Wallpaper } | { ok: false; message: string };
+
+/**
+ * Mise à jour lancée depuis le téléphone (scripts/update.ps1). Quand une nouvelle version
+ * est installée, le serveur est arrêté puis relancé : l'état repart alors de « idle ».
+ */
+export type UpdateStatus =
+  | { state: 'unavailable'; message: string }
+  | { state: 'idle' }
+  | { state: 'running'; startedAt: number }
+  | { state: 'up-to-date'; finishedAt: number }
+  | { state: 'failed'; finishedAt: number; message: string };

@@ -32,6 +32,8 @@ export interface AppConfig {
   hostname: string;
   ports: { https: number; tv: number; setup: number };
   paths: {
+    /** Racine du dépôt (scripts, interfaces construites). */
+    repo: string;
     data: string;
     settings: string;
     sessions: string;
@@ -80,6 +82,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
     hostname: (e.ELEVENTV_HOSTNAME ?? `${os.hostname()}.local`).toLowerCase(),
     ports: { https: e.ELEVENTV_HTTPS_PORT, tv: e.ELEVENTV_TV_PORT, setup: e.ELEVENTV_SETUP_PORT },
     paths: {
+      repo: repoRoot,
       data,
       settings: path.join(data, 'settings.json'),
       sessions: path.join(data, 'sessions.json'),

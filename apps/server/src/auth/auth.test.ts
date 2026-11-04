@@ -154,20 +154,6 @@ describe('AuthService', () => {
     expect(restarted.pairingPin).toMatch(/^\d{6}$/);
   });
 
-  it('le code d’appairage ne permet pas de changer le PIN', async () => {
-    const { auth } = await setup();
-    const pin = auth.pairingPin!;
-    const session = await auth.login(pin, '192.168.1.20', 't');
-    if (!session.ok) throw new Error('connexion impossible');
-    await auth.logout(session.token);
-    const code = auth.pairingPin!;
-    if (code === pin) return;
-    expect(await auth.changePin(code, '2468', '192.168.1.20', 't')).toEqual({
-      ok: false,
-      reason: 'invalid',
-    });
-  });
-
   it('génère un PIN d’appairage au premier démarrage, puis le retire après connexion', async () => {
     const { auth, settings } = await setup();
     const pin = auth.pairingPin;
@@ -195,24 +181,16 @@ describe('AuthService', () => {
     expect(locked).toMatchObject({ ok: false, reason: 'locked' });
   });
 
-  it('change le PIN, révoque toutes les sessions et en rouvre une pour l’appelant', async () => {
-    const { auth } = await setup();
+  it('définit le PIN sans l’actuel, révoque les sessions et en rouvre une pour l’appelant', async () => {
+    const { auth, settings } = await setup();
     const pin = auth.pairingPin!;
     const other = await auth.login(pin, '192.168.1.21', 'autre téléphone');
     if (!other.ok) throw new Error('connexion impossible');
 
-    const wrong = await auth.changePin(
-      pin === '0000' ? '1111' : '0000',
-      '2468',
-      '192.168.1.20',
-      't',
-    );
-    expect(wrong).toEqual({ ok: false, reason: 'invalid' });
-
-    const changed = await auth.changePin(pin, '2468', '192.168.1.20', 't');
-    expect(changed.ok).toBe(true);
+    const changed = await auth.setPin('2468', '192.168.1.20', 't');
     expect(auth.authenticate(other.token)).toBe(false);
-    if (changed.ok) expect(auth.authenticate(changed.token)).toBe(true);
+    expect(auth.authenticate(changed.token)).toBe(true);
+    expect(settings.get().auth?.pairingPending).toBe(false);
 
     expect((await auth.login(pin, '192.168.1.22', 't')).ok).toBe(false);
     expect((await auth.login('2468', '192.168.1.22', 't')).ok).toBe(true);

@@ -17,6 +17,7 @@ import type { StateHub } from '../hub/state-hub';
 import { fastifyLogging, type Logger } from '../log';
 import type { ArtworkProxy } from '../music/artwork';
 import { normalizeAddress } from '../net/addresses';
+import type { Updater } from '../update/updater';
 import { WALLPAPER_ROUTE, wallpaperContentType } from '../wallpapers/library';
 import { InvalidImageError, type WallpaperManager } from '../wallpapers/manager';
 import { registerArtworkRoute } from './artwork-route';
@@ -35,6 +36,7 @@ export interface LanAppDeps {
   auth: AuthService;
   wallpapers: WallpaperManager;
   artwork: ArtworkProxy;
+  updater: Updater;
   tls: { key: string; cert: string };
 }
 
@@ -79,6 +81,7 @@ export async function buildLanApp({
   auth,
   wallpapers,
   artwork,
+  updater,
   tls,
 }: LanAppDeps) {
   const dev = config.env === 'development';
@@ -133,8 +136,7 @@ export async function buildLanApp({
     if (!body.success) {
       return reply.code(400).send({ ok: false, reason: 'invalid' } satisfies ChangePinResponse);
     }
-    const { current, next } = body.data;
-    const result = await auth.changePin(current, next, normalizeAddress(req.ip), sessionLabel(req));
+    const result = await auth.setPin(body.data.pin, normalizeAddress(req.ip), sessionLabel(req));
     return replyWithSession(reply, result);
   });
 
@@ -199,6 +201,16 @@ export async function buildLanApp({
   }
 
   registerArtworkRoute(app, artwork, requireSessionForImages);
+
+  // --- Mise à jour de 11TV ------------------------------------------------------------
+
+  app.get('/api/update', { preValidation: requireSession }, () => updater.state);
+
+  app.post('/api/update', { preValidation: requireSession }, (req, reply) => {
+    if (!updater.start()) return reply.code(409).send(updater.state);
+    req.log.info('Mise à jour demandée');
+    return reply.code(202).send(updater.state);
+  });
 
   // Session revérifiée à chaque heartbeat : un téléphone révoqué (PIN changé) est coupé.
   registerHubSocket(app, hub, 'remote', {

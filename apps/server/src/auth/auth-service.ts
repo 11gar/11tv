@@ -65,7 +65,7 @@ export class AuthService extends EventEmitter<{ pairingChange: [] }> {
   }
 
   async login(pin: string, ip: string, label: string): Promise<LoginResult> {
-    const check = await this.checkPin(pin, ip, true);
+    const check = await this.checkPin(pin, ip);
     if (!check.ok) return check;
 
     const token = await this.sessions.create(label);
@@ -85,17 +85,16 @@ export class AuthService extends EventEmitter<{ pairingChange: [] }> {
   }
 
   /**
-   * Change le PIN après vérification de l'actuel (soumise au même limiteur que la connexion).
-   * Toutes les sessions sont révoquées ; une nouvelle est ouverte pour le téléphone appelant.
+   * Définit le PIN permanent. L'appelant a déjà une session valide (vérifiée par la route) :
+   * le PIN actuel n'est pas redemandé, car celui du premier démarrage, tiré au hasard et
+   * affiché une seule fois, est rarement connu. Toutes les autres sessions sont révoquées ;
+   * une nouvelle est ouverte pour le téléphone appelant.
    */
-  async changePin(current: string, next: string, ip: string, label: string): Promise<LoginResult> {
-    const check = await this.checkPin(current, ip, false);
-    if (!check.ok) return check;
-
+  async setPin(next: string, ip: string, label: string): Promise<{ ok: true; token: string }> {
     const pinHash = await hashPin(next);
     await this.settings.update((s) => ({ ...s, auth: { pinHash, pairingPending: false } }));
     await this.sessions.revokeAll();
-    this.log.info({ ip }, 'PIN modifié, sessions révoquées');
+    this.log.info({ ip }, 'PIN défini, autres sessions révoquées');
     return { ok: true, token: await this.sessions.create(label) };
   }
 
@@ -118,12 +117,7 @@ export class AuthService extends EventEmitter<{ pairingChange: [] }> {
     this.log.info('Aucun téléphone connecté : un code d’appairage est affiché sur la TV');
   }
 
-  /** `allowPairing` : le code affiché sur la TV ouvre une session, mais ne change pas le PIN. */
-  private async checkPin(
-    pin: string,
-    ip: string,
-    allowPairing: boolean,
-  ): Promise<{ ok: true } | PinFailure> {
+  private async checkPin(pin: string, ip: string): Promise<{ ok: true } | PinFailure> {
     for (const [limiter, key] of [
       [this.ipLimiter, ip],
       [this.globalLimiter, GLOBAL_KEY],
@@ -135,9 +129,8 @@ export class AuthService extends EventEmitter<{ pairingChange: [] }> {
     }
 
     const auth = this.settings.get().auth;
-    const pairing = allowPairing && this.pairingPinValue !== null;
     const valid =
-      (pairing && sameCode(pin, this.pairingPinValue ?? '')) ||
+      (this.pairingPinValue !== null && sameCode(pin, this.pairingPinValue)) ||
       (auth != null && (await verifyPin(pin, auth.pinHash)));
     if (!valid) {
       this.ipLimiter.recordFailure(ip);

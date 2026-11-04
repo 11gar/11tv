@@ -6,37 +6,35 @@ interface Props {
   notify: (message: string) => void;
 }
 
+/**
+ * PIN permanent de connexion. Ce téléphone étant déjà connecté, le PIN actuel n'est pas
+ * demandé (celui du premier démarrage, affiché une seule fois sur la TV, est rarement connu).
+ */
 export function PinSettings({ notify }: Props) {
-  const [current, setCurrent] = useState('');
-  const [next, setNext] = useState('');
+  const [pin, setPin] = useState('');
   const [confirmation, setConfirmation] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
   const submit = async () => {
     setError(null);
-    if (!PIN_PATTERN.test(next)) {
-      setError('Le nouveau PIN doit compter 4 à 8 chiffres.');
+    if (!PIN_PATTERN.test(pin)) {
+      setError('Le PIN doit compter 4 à 8 chiffres.');
       return;
     }
-    if (next !== confirmation) {
-      setError('Les deux saisies du nouveau PIN diffèrent.');
+    if (pin !== confirmation) {
+      setError('Les deux saisies diffèrent.');
       return;
     }
     setBusy(true);
     try {
-      const result = await changePin({ current, next });
+      const result = await changePin({ pin });
       if (result.ok) {
-        setCurrent('');
-        setNext('');
+        setPin('');
         setConfirmation('');
-        notify('PIN modifié. Les autres téléphones devront se reconnecter.');
+        notify('PIN enregistré. Les autres téléphones devront se reconnecter.');
       } else {
-        setError(
-          result.reason === 'locked'
-            ? `Trop de tentatives. Réessayez dans ${String(result.retryAfterSec ?? 30)} s.`
-            : 'PIN actuel incorrect.',
-        );
+        setError('PIN refusé par la Surface.');
       }
     } catch {
       setError('Impossible de joindre la Surface.');
@@ -52,7 +50,7 @@ export function PinSettings({ notify }: Props) {
         class="input"
         type="password"
         inputMode="numeric"
-        autocomplete="off"
+        autocomplete="new-password"
         maxLength={8}
         value={value}
         onInput={(e) => {
@@ -65,6 +63,10 @@ export function PinSettings({ notify }: Props) {
   return (
     <section class="card">
       <h2 class="card__title">Code PIN</h2>
+      <p class="muted">
+        Code permanent pour connecter un téléphone, en plus du code affiché sur la TV quand aucun
+        téléphone n’est connecté.
+      </p>
       <form
         class="stack stack--tight"
         onSubmit={(e) => {
@@ -72,16 +74,15 @@ export function PinSettings({ notify }: Props) {
           void submit();
         }}
       >
-        {pinInput('PIN actuel', current, setCurrent)}
-        {pinInput('Nouveau PIN (4 à 8 chiffres)', next, setNext)}
-        {pinInput('Confirmer le nouveau PIN', confirmation, setConfirmation)}
+        {pinInput('Nouveau PIN (4 à 8 chiffres)', pin, setPin)}
+        {pinInput('Confirmer le PIN', confirmation, setConfirmation)}
         {error && (
           <p class="form-error" role="alert">
             {error}
           </p>
         )}
-        <button type="submit" class="button" disabled={busy || !current || !next}>
-          Changer le PIN
+        <button type="submit" class="button" disabled={busy || !pin || !confirmation}>
+          Enregistrer le PIN
         </button>
       </form>
     </section>

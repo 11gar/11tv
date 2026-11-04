@@ -169,7 +169,12 @@ mises à jour Windows en attente.
 
 ### Mettre à jour
 
-Depuis la session de la TV, sans droits d'administrateur :
+Depuis le téléphone : **Réglages → Mise à jour → Mettre à jour 11TV**. Le téléphone indique
+si 11TV était déjà à jour, affiche l'erreur en cas d'échec, et se recharge tout seul sur la
+nouvelle version.
+
+Ou depuis la session de la TV, sans droits d'administrateur (`-Force` pour reconstruire
+même sans nouveau code) :
 
 ```bash
 powershell -ExecutionPolicy Bypass -File scripts\update.ps1
@@ -211,7 +216,8 @@ suivant) et les titres écoutés récemment sur la TV, à relancer d'un appui. L
 
 **Réglages** : ajout d'images (JPEG, PNG ou WebP ; elles sont réduites à 3840 px, converties
 en WebP et débarrassées de leurs métadonnées, position GPS comprise), ordre, suppression,
-délai de défilement, changement de PIN (les autres téléphones sont déconnectés).
+délai de défilement, PIN permanent, sans redemander l'actuel (les autres téléphones sont
+déconnectés), mise à jour de 11TV.
 
 ## Installation sur le téléphone
 
@@ -257,7 +263,8 @@ Données (jamais dans le dépôt), dans `%LOCALAPPDATA%\11TV\` :
 ## Sécurité
 
 - **PIN** haché avec scrypt ; 5 erreurs par adresse (20 au total) déclenchent un blocage dont
-  la durée double, jusqu'à 15 minutes.
+  la durée double, jusqu'à 15 minutes. Un téléphone déjà connecté peut le redéfinir sans
+  l'actuel : sa session fait foi, et les autres téléphones sont déconnectés.
 - **Sessions** : jeton aléatoire dans un cookie `__Host-`, `HttpOnly`, `Secure`,
   `SameSite=Strict`, 90 jours glissants ; seule son empreinte SHA-256 est stockée.
 - **Réseau** : toute requête hors réseau privé est refusée ; l'écran TV et le port CDP

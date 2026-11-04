@@ -54,6 +54,11 @@ TV (PIN d'appairage) depuis le réseau.
   qui le relance s'il s'arrête ou si `/api/health` ne répond plus. Une exception non gérée
   arrête le serveur plutôt que de le laisser dans un état inconnu.
 - **Nuit** : redémarrage de la Surface si la TV ne sert pas, mises à jour Windows comprises.
+- **Mise à jour de 11TV** : `POST /api/update` (téléphone, session requise) lance
+  `scripts/update.ps1`, un script fixe sans paramètre venant du téléphone. Il récupère le
+  code ; s'il n'y a rien de nouveau, il s'arrête (code 3). Sinon il reconstruit et arrête le
+  serveur, que le lanceur relance sur la nouvelle version. La sortie du script va dans
+  `logs/update.log`, dont la fin est renvoyée au téléphone en cas d'échec.
 - **Journaux** : rotation par taille faite par le serveur (10 Mo, 5 fichiers).
 - **Edge** : boucle de réconciliation toutes les 5 s (port de debug -> connexion -> onglet).
   Edge est détaché du serveur : un redémarrage du serveur ne ferme pas le kiosque, ni la

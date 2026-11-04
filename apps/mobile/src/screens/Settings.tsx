@@ -2,6 +2,7 @@ import { logout } from '../api';
 import { displayMode } from '../display-mode';
 import { PinSettings } from '../components/PinSettings';
 import { SlideIntervalSettings } from '../components/SlideIntervalSettings';
+import { UpdateSettings } from '../components/UpdateSettings';
 import { WallpaperSettings } from '../components/WallpaperSettings';
 import type { ScreenProps } from '../Shell';
 
@@ -39,6 +40,7 @@ export function Settings({ state, send, notify, onLogout }: Props) {
         />
       )}
       <PinSettings notify={notify} />
+      <UpdateSettings />
       <button
         type="button"
         class="link"

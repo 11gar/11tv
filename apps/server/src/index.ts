@@ -6,6 +6,7 @@ import { EdgeBrowser } from './browser/edge-browser';
 import { loadConfig, loadDotEnv } from './config';
 import { ConnectionInfo } from './connection-info';
 import { buildLanApp } from './http/lan-app';
+import { Updater } from './update/updater';
 import { buildSetupApp } from './http/setup-app';
 import { buildTvApp } from './http/tv-app';
 import { StateHub } from './hub/state-hub';
@@ -139,6 +140,7 @@ async function main(): Promise<void> {
     auth,
     wallpapers: wallpaperManager,
     artwork,
+    updater: new Updater({ config, log }),
     tls: { key: certificate.keyPem, cert: certificate.certPem },
   });
   const setupApp = buildSetupApp(log, {
