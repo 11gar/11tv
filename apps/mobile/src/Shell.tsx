@@ -1,42 +1,42 @@
-import type { AppState, ClientMessage } from '@11tv/shared';
-import { useAppSocket } from '@11tv/web';
+import {
+  getService,
+  type AppState,
+  type ClientMessage,
+  type ServiceId,
+  type VolumeAction,
+} from '@11tv/shared';
+import { useAppSocket, Wallpapers } from '@11tv/web';
 import { useCallback, useEffect, useState } from 'preact/hooks';
 import { fetchSession } from './api';
-import { MiniPlayer } from './components/MiniPlayer';
-import { Home } from './screens/Home';
+import { Clock } from './components/Clock';
+import { GearIcon, KeyboardIcon, VolumeDownIcon, VolumeUpIcon } from './components/icons';
+import { KeyboardPanel } from './components/KeyboardPanel';
+import { NowPlayingPill } from './components/NowPlayingPill';
+import { RepeatButton } from './components/RepeatButton';
+import { ServiceIcon } from './components/ServiceIcon';
+import { Sheet } from './components/Sheet';
+import { Trackpad } from './components/Trackpad';
+import { haptic } from './hooks/use-repeat';
 import { Music } from './screens/Music';
-import { Remote } from './screens/Remote';
 import { Settings } from './screens/Settings';
 
-type Tab = 'home' | 'remote' | 'music' | 'settings';
-
-const TABS: { id: Tab; label: string; icon: string }[] = [
-  { id: 'home', label: 'Accueil', icon: '⌂' },
-  { id: 'remote', label: 'Télécommande', icon: '✥' },
-  { id: 'music', label: 'Musique', icon: '♫' },
-  { id: 'settings', label: 'Réglages', icon: '⚙' },
+/** Ordre des icônes, deux par ligne. */
+const SERVICE_ORDER: readonly ServiceId[] = [
+  'prime-video',
+  'youtube-music',
+  'youtube',
+  'disney-plus',
 ];
 
-const TAB_STORAGE_KEY = '11tv.tab';
+type Panel = 'settings' | 'keyboard' | 'music';
 
-function loadTab(): Tab {
-  try {
-    const saved = localStorage.getItem(TAB_STORAGE_KEY);
-    return TABS.some((t) => t.id === saved) ? (saved as Tab) : 'home';
-  } catch {
-    return 'home';
-  }
-}
+const PANEL_TITLES: Record<Panel, string> = {
+  settings: 'Réglages',
+  keyboard: 'Clavier',
+  music: 'Musique',
+};
 
-function saveTab(tab: Tab): void {
-  try {
-    localStorage.setItem(TAB_STORAGE_KEY, tab);
-  } catch {
-    // Stockage indisponible (navigation privée…) : l'onglet ne sera simplement pas retenu.
-  }
-}
-
-/** Ce que reçoivent les écrans : l'état et un envoi qui prévient si la Surface est injoignable. */
+/** Ce que reçoivent les panneaux : l'état et un envoi qui prévient si la Surface est injoignable. */
 export interface ScreenProps {
   state: AppState | null;
   send: (message: ClientMessage) => void;
@@ -47,9 +47,19 @@ interface Props {
   onSessionLost: () => void;
 }
 
+const BROWSER_WARNINGS = {
+  starting: 'Démarrage du navigateur…',
+  unavailable: 'Navigateur de la TV indisponible',
+} as const;
+
+/**
+ * Tout tient sur une page, comme l'écran de la TV : horloge (un appui ramène la TV à
+ * l'accueil), services, trackpad avec ses boutons, et la musique en bas. Réglages, clavier et
+ * lecteur complet s'ouvrent dans des panneaux.
+ */
 export function Shell({ onSessionLost }: Props) {
   const { state, status, error, send: rawSend } = useAppSocket<AppState>();
-  const [tab, setTab] = useState<Tab>(loadTab);
+  const [panel, setPanel] = useState<Panel | null>(null);
   const [toast, setToast] = useState<{ message: string; id: number } | null>(null);
 
   const notify = useCallback((message: string) => {
@@ -88,60 +98,124 @@ export function Shell({ onSessionLost }: Props) {
     };
   }, [toast]);
 
-  const screen: ScreenProps = { state, send, notify };
-  const nowPlaying = state?.music.nowPlaying ?? null;
-  const showMiniPlayer = nowPlaying !== null && tab !== 'music';
-  const selectTab = (next: Tab) => {
-    setTab(next);
-    saveTab(next);
+  const closePanel = useCallback(() => {
+    setPanel(null);
+  }, []);
+  const volume = (action: VolumeAction) => () => {
+    send({ type: 'volume', action });
   };
 
+  const screen: ScreenProps = { state, send, notify };
+  const pointerAvailable = state?.pointerAvailable ?? true;
+  const notice =
+    status !== 'open'
+      ? 'Hors ligne'
+      : state && state.browser !== 'ready'
+        ? BROWSER_WARNINGS[state.browser]
+        : null;
+
   return (
-    <div class={showMiniPlayer ? 'shell shell--mini-player' : 'shell'}>
-      <header class="shell__header">
-        <h1 class="shell__title">11TV</h1>
-        <span class={`dot dot--${status}`} title={status === 'open' ? 'Connecté' : 'Hors ligne'} />
-      </header>
+    <div class="shell">
+      <div class="backdrop">
+        <Wallpapers images={state?.wallpapers ?? []} intervalSec={state?.slideIntervalSec ?? 30} />
+      </div>
 
-      <main class="shell__content">
-        {tab === 'home' && <Home {...screen} />}
-        {tab === 'remote' && <Remote {...screen} />}
-        {tab === 'music' && <Music {...screen} />}
-        {tab === 'settings' && <Settings {...screen} onLogout={onSessionLost} />}
-      </main>
-
-      {showMiniPlayer && (
-        <MiniPlayer
-          nowPlaying={nowPlaying}
-          onAction={(action) => {
-            send({ type: 'music', action });
+      <main class="home">
+        <button
+          type="button"
+          class="clock-button"
+          aria-label="Ramener la TV à l’accueil"
+          onClick={() => {
+            haptic();
+            send({ type: 'home' });
           }}
+        >
+          <Clock />
+        </button>
+        {notice && <p class="notice glass">{notice}</p>}
+
+        <nav class="services" aria-label="Services">
+          {SERVICE_ORDER.map(getService).map((service) => (
+            <button
+              key={service.id}
+              type="button"
+              class={
+                state?.view === service.id ? 'service-icon service-icon--active' : 'service-icon'
+              }
+              aria-label={service.name}
+              onClick={() => {
+                haptic();
+                send({ type: 'launch', service: service.id });
+              }}
+            >
+              <ServiceIcon id={service.id} />
+            </button>
+          ))}
+        </nav>
+
+        <section class="remote" aria-label="Télécommande">
+          {pointerAvailable ? (
+            <Trackpad send={send} />
+          ) : (
+            <div class="trackpad glass trackpad--off">Souris indisponible sur la Surface</div>
+          )}
+          <div class="remote__buttons">
+            <button
+              type="button"
+              class="square-button glass"
+              aria-label="Réglages"
+              onClick={() => {
+                setPanel('settings');
+              }}
+            >
+              <GearIcon />
+            </button>
+            <RepeatButton
+              class="square-button glass"
+              label="Monter le volume"
+              onPress={volume('up')}
+            >
+              <VolumeUpIcon />
+            </RepeatButton>
+            <RepeatButton
+              class="square-button glass"
+              label="Baisser le volume"
+              onPress={volume('down')}
+            >
+              <VolumeDownIcon />
+            </RepeatButton>
+            <button
+              type="button"
+              class="square-button glass"
+              aria-label="Clavier"
+              onClick={() => {
+                setPanel('keyboard');
+              }}
+            >
+              <KeyboardIcon />
+            </button>
+          </div>
+        </section>
+
+        <NowPlayingPill
+          music={state?.music}
+          send={send}
           onOpen={() => {
-            selectTab('music');
+            setPanel('music');
           }}
         />
+      </main>
+
+      {panel && (
+        <Sheet title={PANEL_TITLES[panel]} onClose={closePanel}>
+          {panel === 'settings' && <Settings {...screen} onLogout={onSessionLost} />}
+          {panel === 'keyboard' && <KeyboardPanel send={send} />}
+          {panel === 'music' && <Music {...screen} />}
+        </Sheet>
       )}
 
-      <nav class="tabbar">
-        {TABS.map((t) => (
-          <button
-            key={t.id}
-            type="button"
-            class={t.id === tab ? 'tabbar__item tabbar__item--active' : 'tabbar__item'}
-            onClick={() => {
-              selectTab(t.id);
-            }}
-          >
-            <span class="tabbar__icon" aria-hidden="true">
-              {t.icon}
-            </span>
-            {t.label}
-          </button>
-        ))}
-      </nav>
-
       {toast && (
-        <div key={toast.id} class="toast" role="status">
+        <div key={toast.id} class="toast glass glass--strong" role="status">
           {toast.message}
         </div>
       )}

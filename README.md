@@ -44,7 +44,7 @@ apps/server     serveur Node (TypeScript, Fastify)
 apps/tv         écran d'accueil TV (Preact)
 apps/mobile     PWA du téléphone (Preact, vite-plugin-pwa)
 packages/shared types, services, schémas zod (serveur uniquement)
-packages/web    code commun aux deux interfaces (WebSocket avec reconnexion)
+packages/web    code commun aux deux interfaces (WebSocket, fonds d'écran, style « verre »)
 scripts/        scripts PowerShell pour la Surface
 docs/           architecture et décisions
 ```
@@ -134,17 +134,17 @@ accepté en plus du PIN. Pour repartir de zéro : `pnpm pin:reset`, puis redéma
 
 ## Utilisation
 
-**Accueil** : lance un service sur la TV ou revient à l'écran d'accueil.
+Le téléphone tient sur une seule page, sur les mêmes fonds d'écran que la TV :
 
-**Télécommande**, en trois modes :
-
-| Mode     | Usage                                                                                                                                |
-| -------- | ------------------------------------------------------------------------------------------------------------------------------------ |
-| Pavé     | Flèches (maintenir pour répéter), OK, Retour (Échap), Lecture (Espace), Précédent (page précédente), élément suivant/précédent (Tab) |
-| Trackpad | Glisser : curseur · toucher : clic · deux doigts : défiler · toucher à deux doigts : clic droit                                      |
-| Clavier  | Cliquez d'abord dans le champ de recherche (trackpad), puis tapez et envoyez                                                         |
-
-Le volume (−, muet, +) pilote le volume de Windows ; celui de la TV reste sur sa télécommande.
+| Élément             | Usage                                                                                           |
+| ------------------- | ----------------------------------------------------------------------------------------------- |
+| Horloge             | Un appui ramène la TV à l'écran d'accueil                                                       |
+| Icônes des services | Lancent YouTube, YouTube Music, Disney+ ou Prime Video sur la TV                                |
+| Trackpad            | Glisser : curseur · toucher : clic · deux doigts : défiler · toucher à deux doigts : clic droit |
+| Volume + et −       | Volume de Windows (maintenir pour répéter) ; celui de la TV reste sur sa télécommande           |
+| Clavier             | Texte envoyé au champ actif (cliquez-y d'abord avec le trackpad), Échap, Entrée, Espace, Tab…   |
+| Pastille musique    | Lecture/pause ; un appui ailleurs ouvre le lecteur complet et les titres récents                |
+| Roue dentée         | Réglages                                                                                        |
 
 Les touches passent par Edge lui-même : elles fonctionnent même si Edge n'a pas le focus.
 La souris et le volume passent par Windows (`SendInput`) : le serveur doit tourner dans la
@@ -152,9 +152,8 @@ session de l'utilisateur, pas comme service.
 
 **Musique** : YouTube Music s'ouvre dans sa propre fenêtre. « Accueil » la met de côté sans
 couper la lecture, et l'écran d'accueil affiche alors le titre en cours (pochette, titre,
-artiste). L'onglet Musique du téléphone montre le titre en cours avec ses commandes
-(précédent, lecture/pause, suivant) et les titres écoutés récemment sur la TV, à relancer
-d'un appui. Lancer YouTube, Disney+ ou Prime Video met la musique en pause.
+artiste). Sur le téléphone, la pastille du bas ouvre le lecteur complet (précédent, lecture/pause,
+suivant) et les titres écoutés récemment sur la TV, à relancer d'un appui. Lancer YouTube, Disney+ ou Prime Video met la musique en pause.
 
 **Réglages** : ajout d'images (JPEG, PNG ou WebP ; elles sont réduites à 3840 px, converties
 en WebP et débarrassées de leurs métadonnées, position GPS comprise), ordre, suppression,

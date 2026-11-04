@@ -1,50 +1,43 @@
 import type { MusicAction } from '@11tv/shared';
+import { haptic } from '../hooks/use-repeat';
+import { NextIcon, PlayPauseIcon, PrevIcon } from './icons';
 
 interface Props {
   playing: boolean;
   onAction: (action: MusicAction) => void;
-  compact?: boolean;
 }
 
-/** Précédent, lecture/pause, suivant. En version compacte : lecture/pause seulement. */
-export function PlayerControls({ playing, onAction, compact = false }: Props) {
-  const playPause = (
-    <button
-      type="button"
-      class="player-button player-button--main"
-      aria-label={playing ? 'Pause' : 'Lecture'}
-      onClick={(event) => {
-        event.stopPropagation();
-        onAction('play-pause');
-      }}
-    >
-      {playing ? '❚❚' : '▶'}
-    </button>
-  );
-  if (compact) return playPause;
-
+/** Précédent, lecture/pause, suivant. */
+export function PlayerControls({ playing, onAction }: Props) {
+  const act = (action: MusicAction) => () => {
+    haptic();
+    onAction(action);
+  };
   return (
     <div class="player-controls">
       <button
         type="button"
-        class="player-button"
+        class="round-button glass"
         aria-label="Titre précédent"
-        onClick={() => {
-          onAction('previous');
-        }}
+        onClick={act('previous')}
       >
-        ⏮
+        <PrevIcon />
       </button>
-      {playPause}
       <button
         type="button"
-        class="player-button"
-        aria-label="Titre suivant"
-        onClick={() => {
-          onAction('next');
-        }}
+        class="round-button round-button--large glass"
+        aria-label={playing ? 'Pause' : 'Lecture'}
+        onClick={act('play-pause')}
       >
-        ⏭
+        <PlayPauseIcon playing={playing} />
+      </button>
+      <button
+        type="button"
+        class="round-button glass"
+        aria-label="Titre suivant"
+        onClick={act('next')}
+      >
+        <NextIcon />
       </button>
     </div>
   );

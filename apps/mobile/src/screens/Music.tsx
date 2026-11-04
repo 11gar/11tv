@@ -8,13 +8,13 @@ function Player({ nowPlaying, send }: { nowPlaying: NowPlaying } & Pick<ScreenPr
   const position = usePlaybackPosition(nowPlaying);
   const progress = nowPlaying.durationSec > 0 ? position / nowPlaying.durationSec : 0;
   return (
-    <section class="card player">
+    <section class="player">
       <Artwork url={nowPlaying.artworkUrl} class="artwork--large" />
       <div class="player__text">
         <strong class="player__title">{nowPlaying.title}</strong>
         <span class="muted">{nowPlaying.artist}</span>
       </div>
-      <div class="player__time">
+      <div>
         <div class="progress">
           <div class="progress__bar" style={{ transform: `scaleX(${String(progress)})` }} />
         </div>
@@ -53,9 +53,6 @@ function RecentList({ tracks, send }: { tracks: RecentTrack[] } & Pick<ScreenPro
               <span class="track-text__title">{track.title}</span>
               <span class="track-text__artist">{track.artist}</span>
             </span>
-            <span class="track-row__play" aria-hidden="true">
-              ▶
-            </span>
           </button>
         </li>
       ))}
@@ -63,37 +60,17 @@ function RecentList({ tracks, send }: { tracks: RecentTrack[] } & Pick<ScreenPro
   );
 }
 
+/** Contenu du lecteur complet : titre en cours, commandes et titres écoutés récemment. */
 export function Music({ state, send }: ScreenProps) {
   const nowPlaying = state?.music.nowPlaying ?? null;
   const onTv = state?.view === 'youtube-music';
-  const last = state?.music.recent[0];
 
   return (
     <div class="stack">
-      {nowPlaying ? (
-        <Player nowPlaying={nowPlaying} send={send} />
-      ) : (
-        <section class="card">
-          <h2 class="card__title">Rien en cours</h2>
-          {last ? (
-            <button
-              type="button"
-              class="button button--wide"
-              onClick={() => {
-                send({ type: 'play-track', videoId: last.videoId, playlistId: last.playlistId });
-              }}
-            >
-              Reprendre « {last.title} »
-            </button>
-          ) : (
-            <p class="muted">Lancez un titre depuis YouTube Music sur la TV.</p>
-          )}
-        </section>
-      )}
-
+      {nowPlaying && <Player nowPlaying={nowPlaying} send={send} />}
       <button
         type="button"
-        class="button button--secondary button--wide"
+        class="button glass button--wide"
         disabled={onTv}
         onClick={() => {
           send({ type: 'launch', service: 'youtube-music' });
@@ -101,9 +78,8 @@ export function Music({ state, send }: ScreenProps) {
       >
         {onTv ? 'YouTube Music est affiché sur la TV' : 'Afficher YouTube Music sur la TV'}
       </button>
-
       <section class="stack stack--tight">
-        <h2 class="card__title">Écouté récemment</h2>
+        <h3 class="section-title">Écouté récemment</h3>
         <RecentList tracks={state?.music.recent ?? []} send={send} />
       </section>
     </div>

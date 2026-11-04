@@ -1,16 +1,7 @@
 import { useEffect, useState } from 'preact/hooks';
 import { usePixelShift } from '../hooks/use-pixel-shift';
 
-const dateFormat = new Intl.DateTimeFormat('fr-FR', {
-  weekday: 'long',
-  day: 'numeric',
-  month: 'long',
-});
 const timeFormat = new Intl.DateTimeFormat('fr-FR', { hour: '2-digit', minute: '2-digit' });
-
-function capitalize(text: string): string {
-  return text.charAt(0).toUpperCase() + text.slice(1);
-}
 
 export function Clock() {
   const [now, setNow] = useState(() => new Date());
@@ -33,7 +24,6 @@ export function Clock() {
   return (
     <div class="clock" style={{ transform: shift }}>
       <div class="clock__time">{timeFormat.format(now)}</div>
-      <div class="clock__date">{capitalize(dateFormat.format(now))}</div>
     </div>
   );
 }

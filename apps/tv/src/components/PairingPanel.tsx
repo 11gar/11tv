@@ -7,7 +7,7 @@ interface Props {
 /** Affiché tant qu'aucun téléphone n'est appairé : marche à suivre, QR code et PIN. */
 export function PairingPanel({ pairing }: Props) {
   return (
-    <aside class="pairing" aria-label="Associer un téléphone">
+    <aside class="pairing glass" aria-label="Associer un téléphone">
       <h2 class="pairing__title">Associer un téléphone</h2>
       <div class="pairing__body">
         {/* SVG généré côté serveur par la bibliothèque qrcode à partir de notre propre URL. */}

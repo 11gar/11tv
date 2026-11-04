@@ -1,4 +1,5 @@
 import { createHash } from 'node:crypto';
+import sharp from 'sharp';
 
 /** Hôtes d'où viennent les pochettes de YouTube Music. Rien d'autre n'est relayé. */
 const ALLOWED_HOSTS = ['ytimg.com', 'googleusercontent.com', 'ggpht.com'];
@@ -28,6 +29,26 @@ export function artworkKey(url: string): string {
 export interface Artwork {
   type: string;
   body: Buffer;
+}
+
+const ARTWORK_SIZE = 512;
+
+/**
+ * Pochette carrée : les miniatures des clips YouTube sont en 4:3 avec des bandes noires
+ * (format « letterbox »). On les retire, puis on recadre au centre. Une image déjà carrée
+ * (pochette d'album) est seulement redimensionnée.
+ */
+async function squareArtwork(input: Buffer): Promise<Artwork> {
+  const { width, height } = await sharp(input).metadata();
+  const letterboxed = height > 0 && Math.abs(width / height - 4 / 3) < 0.01;
+  const source = letterboxed
+    ? await sharp(input).trim({ background: '#000', threshold: 24 }).toBuffer()
+    : input;
+  const body = await sharp(source)
+    .resize(ARTWORK_SIZE, ARTWORK_SIZE, { fit: 'cover' })
+    .webp({ quality: 85 })
+    .toBuffer();
+  return { type: 'image/webp', body };
 }
 
 /**
@@ -75,7 +96,7 @@ export class ArtworkProxy {
     const body = Buffer.from(await res.arrayBuffer());
     if (body.length > MAX_BYTES) return null;
 
-    const artwork = { type, body };
+    const artwork = await squareArtwork(body).catch(() => ({ type, body }));
     this.cache.set(key, artwork);
     if (this.cache.size > CACHE_ENTRIES) {
       const oldest = this.cache.keys().next().value;

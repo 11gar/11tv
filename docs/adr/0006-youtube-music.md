@@ -29,10 +29,12 @@
   historique) sur les hôtes d'images de Google sont servies : ce n'est pas un proxy ouvert.
 - **Dernière écoute** : historique local des titres écoutés sur la TV (après 10 s
   d'écoute, 20 titres, `music-history.json`), avec reprise en un appui depuis le téléphone.
-- **Barre « En cours de lecture »** sur l'écran d'accueil TV : en haut à gauche, en miroir de
-  l'horloge, avec la pochette, le titre, l'artiste et une fine ligne de progression. Elle
+- **Pastille « En cours de lecture »** sur l'écran d'accueil TV : en bas au centre, en verre
+  translucide, avec la pochette, le titre, l'artiste et l'état lecture/pause. Elle
   s'efface après 5 minutes de pause et se décale de quelques pixels toutes les 10 minutes
-  (marquage des écrans). Le téléphone a un onglet Musique et un mini-lecteur.
+  (marquage des écrans). Le téléphone a la même pastille, qui ouvre le lecteur complet.
+- **Pochettes carrées** : les miniatures de clips (4:3 avec bandes noires) sont rognées puis
+  recadrées en 512 × 512 par sharp, dans le relais.
 
 ## Alternatives
 

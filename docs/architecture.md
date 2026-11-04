@@ -18,7 +18,7 @@ apps/server
   wallpapers/         dossier surveillé, ajout/ordre/suppression et vignettes (sharp)
   errors.ts           UserFacingError : message affiché tel quel sur le téléphone
 packages/shared       types et catalogue des services (sans dépendance) + schémas zod
-packages/web          WebSocket avec reconnexion et hook Preact, communs aux deux interfaces
+packages/web          commun aux deux interfaces : WebSocket, fonds d'écran, style « verre »
 apps/tv, apps/mobile  interfaces Preact construites par Vite et servies par le serveur
 ```
 

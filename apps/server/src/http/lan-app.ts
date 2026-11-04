@@ -17,6 +17,7 @@ import type { StateHub } from '../hub/state-hub';
 import { fastifyLogging, type Logger } from '../log';
 import type { ArtworkProxy } from '../music/artwork';
 import { normalizeAddress } from '../net/addresses';
+import { WALLPAPER_ROUTE, wallpaperContentType } from '../wallpapers/library';
 import { InvalidImageError, type WallpaperManager } from '../wallpapers/manager';
 import { registerArtworkRoute } from './artwork-route';
 import { addSecurityHeaders, restrictToPrivateNetwork, serveSpa } from './common';
@@ -173,6 +174,20 @@ export async function buildLanApp({
       const file = await wallpapers.thumbnail(req.params.id);
       return reply
         .type('image/webp')
+        .header('Cache-Control', 'private, max-age=3600')
+        .send(createReadStream(file));
+    },
+  );
+
+  // Image en taille réelle : le téléphone affiche les mêmes fonds d'écran que la TV.
+  app.get<{ Params: { id: string } }>(
+    `${WALLPAPER_ROUTE}:id`,
+    { preValidation: requireSessionForImages },
+    async (req, reply) => {
+      if (!wallpapers.exists(req.params.id)) return reply.code(404).send();
+      const file = wallpapers.imagePath(req.params.id);
+      return reply
+        .type(wallpaperContentType(file))
         .header('Cache-Control', 'private, max-age=3600')
         .send(createReadStream(file));
     },

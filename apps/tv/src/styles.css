@@ -1,10 +1,8 @@
 /* Interface « à 3 mètres » : tailles en vw/vh pour s'adapter à la résolution de la TV. */
 :root {
   color-scheme: dark;
-  --text: #f4f5f8;
-  --text-dim: rgba(244, 245, 248, 0.72);
-  --panel: rgba(12, 14, 20, 0.72);
-  --fade-ms: 2000ms;
+  --text: #fff;
+  --text-dim: rgba(255, 255, 255, 0.72);
   font-family: 'Segoe UI Variable Display', 'Segoe UI', system-ui, sans-serif;
 }
 
@@ -29,29 +27,13 @@ body {
   overflow: hidden;
 }
 
-/* --- Fonds d'écran ------------------------------------------------------- */
-
-.wallpaper {
-  position: absolute;
-  inset: 0;
-  background-size: cover;
-  background-position: center;
-  animation: fade-in var(--fade-ms) ease-in-out both;
-}
-
-.wallpaper--fallback {
-  background: linear-gradient(120deg, #101a33, #2a1438, #0f2c33, #101a33);
-  background-size: 400% 400%;
-  animation: drift 60s ease-in-out infinite;
-}
-
-/* Assombrit le bas et le haut pour la lisibilité de l'horloge et des tuiles. */
+/* Léger voile en haut (horloge) et en bas (musique), sans ternir l'image. */
 .veil {
   position: absolute;
   inset: 0;
   background:
-    linear-gradient(to bottom, rgba(0, 0, 0, 0.45), transparent 30%),
-    linear-gradient(to top, rgba(0, 0, 0, 0.6), transparent 45%);
+    linear-gradient(to bottom, rgba(0, 0, 0, 0.22), transparent 28%),
+    linear-gradient(to top, rgba(0, 0, 0, 0.25), transparent 25%);
   pointer-events: none;
 }
 
@@ -64,106 +46,6 @@ body {
   }
 }
 
-@keyframes drift {
-  0%,
-  100% {
-    background-position: 0% 50%;
-  }
-  50% {
-    background-position: 100% 50%;
-  }
-}
-
-/* --- Horloge ------------------------------------------------------------- */
-
-.clock {
-  position: absolute;
-  top: 5vh;
-  right: 4vw;
-  text-align: right;
-  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.5);
-  transition: transform 3s ease;
-}
-
-.clock__time {
-  font-size: 5.5vw;
-  font-weight: 300;
-  line-height: 1;
-  font-variant-numeric: tabular-nums;
-}
-
-.clock__date {
-  margin-top: 0.6vh;
-  font-size: 1.6vw;
-  color: var(--text-dim);
-}
-
-/* --- Tuiles des services ------------------------------------------------- */
-
-.tiles {
-  position: absolute;
-  left: 4vw;
-  right: 4vw;
-  bottom: 7vh;
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 2vw;
-}
-
-.tile {
-  aspect-ratio: 16 / 9;
-  border: 0;
-  border-radius: 1.2vw;
-  background:
-    linear-gradient(145deg, color-mix(in srgb, var(--accent) 55%, transparent), transparent 70%),
-    var(--panel);
-  backdrop-filter: blur(12px);
-  color: var(--text);
-  font: inherit;
-  cursor: none;
-  outline: none;
-  transition:
-    transform 180ms ease,
-    box-shadow 180ms ease;
-}
-
-.tile:focus-visible,
-.tile:focus {
-  transform: scale(1.07);
-  box-shadow:
-    0 0 0 0.25vw #fff,
-    0 1.2vw 3vw color-mix(in srgb, var(--accent) 45%, transparent);
-}
-
-.tile__name {
-  font-size: 1.9vw;
-  font-weight: 600;
-  letter-spacing: 0.02em;
-}
-
-/* --- En cours de lecture ------------------------------------------------- */
-
-/* En haut à gauche, en miroir de l'horloge, à la même hauteur que l'heure. */
-.now-playing {
-  position: absolute;
-  top: 5vh;
-  left: 4vw;
-  display: flex;
-  align-items: center;
-  gap: 1.3vw;
-  max-width: 40vw;
-  padding: 0.9vw 1.6vw 0.9vw 0.9vw;
-  border-radius: 1.2vw;
-  background: var(--panel);
-  backdrop-filter: blur(16px);
-  transition: transform 3s ease;
-  animation: fade-in 800ms ease both;
-}
-
-.now-playing--hidden {
-  animation: fade-out 800ms ease both;
-}
-
 @keyframes fade-out {
   from {
     opacity: 1;
@@ -173,14 +55,53 @@ body {
   }
 }
 
+/* --- Horloge ------------------------------------------------------------- */
+
+.clock {
+  position: absolute;
+  top: 9vh;
+  left: 0;
+  right: 0;
+  text-align: center;
+  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.12);
+  transition: transform 3s ease;
+}
+
+.clock__time {
+  font-size: 11vw;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: 0.01em;
+  font-variant-numeric: tabular-nums;
+}
+
+/* --- En cours de lecture ------------------------------------------------- */
+
+.now-playing {
+  position: absolute;
+  left: 50%;
+  bottom: 4.5vh;
+  display: flex;
+  align-items: center;
+  gap: 1vw;
+  width: 24vw;
+  padding: 0.6vw 1.1vw 0.6vw 0.6vw;
+  border-radius: 0.9vw;
+  transition: transform 3s ease;
+  animation: fade-in 800ms ease both;
+}
+
+.now-playing--hidden {
+  animation: fade-out 800ms ease both;
+}
+
 .now-playing__art {
-  position: relative;
   flex: 0 0 auto;
-  width: 5.5vw;
-  height: 5.5vw;
-  border-radius: 0.6vw;
+  width: 3.2vw;
+  height: 3.2vw;
+  border-radius: 0.45vw;
   overflow: hidden;
-  background: rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.12);
 }
 
 .now-playing__art img {
@@ -189,19 +110,10 @@ body {
   object-fit: cover;
 }
 
-.now-playing__paused {
-  position: absolute;
-  inset: 0;
-  display: grid;
-  place-items: center;
-  background: rgba(0, 0, 0, 0.45);
-  font-size: 1.4vw;
-  letter-spacing: -0.1em;
-}
-
 .now-playing__text {
-  min-width: 0;
   flex: 1;
+  min-width: 0;
+  text-align: center;
 }
 
 .now-playing__title,
@@ -212,44 +124,33 @@ body {
 }
 
 .now-playing__title {
-  font-size: 1.45vw;
+  font-size: 1.15vw;
   font-weight: 600;
 }
 
 .now-playing__artist {
-  margin-top: 0.2vw;
-  font-size: 1.1vw;
+  margin-top: 0.1vw;
+  font-size: 0.8vw;
   color: var(--text-dim);
 }
 
-.now-playing__progress {
-  margin-top: 0.8vw;
-  width: 22vw;
-  max-width: 100%;
-  height: 0.22vw;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.18);
-  overflow: hidden;
-}
-
-.now-playing__bar {
-  height: 100%;
-  background: var(--text);
-  transform-origin: left;
-  transition: transform 500ms linear;
+.now-playing__state {
+  flex: 0 0 auto;
+  width: 1.4vw;
+  height: 1.4vw;
+  fill: currentColor;
 }
 
 /* --- Appairage ----------------------------------------------------------- */
 
 .pairing {
   position: absolute;
-  top: 5vh;
-  left: 4vw;
-  width: 34vw;
+  top: 34vh;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 38vw;
   padding: 2vw;
-  border-radius: 1.2vw;
-  background: var(--panel);
-  backdrop-filter: blur(16px);
+  border-radius: 1.4vw;
   animation: fade-in 600ms ease both;
 }
 
@@ -317,7 +218,6 @@ body {
   transform: translateX(-50%);
   padding: 0.5vw 1.2vw;
   border-radius: 999px;
-  background: var(--panel);
   font-size: 1vw;
   color: var(--text-dim);
 }

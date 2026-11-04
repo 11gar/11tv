@@ -2,6 +2,7 @@ import { mkdtemp } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import pino from 'pino';
+import sharp from 'sharp';
 import { describe, expect, it } from 'vitest';
 import { ArtworkProxy, isAllowedArtworkUrl } from './artwork';
 import { MusicHistory } from './history';
@@ -206,6 +207,39 @@ describe('Pochettes', () => {
 
     proxy.retain([]);
     expect(await proxy.get(key)).toBeNull();
+  });
+
+  it('retire les bandes noires des miniatures de clips et rend une pochette carrée', async () => {
+    // Miniature 4:3 : image rouge 16:9 entre deux bandes noires de 60 px.
+    const thumbnail = await sharp({
+      create: { width: 640, height: 480, channels: 3, background: '#000' },
+    })
+      .composite([
+        {
+          input: await sharp({
+            create: { width: 640, height: 360, channels: 3, background: '#e01010' },
+          })
+            .png()
+            .toBuffer(),
+          top: 60,
+          left: 0,
+        },
+      ])
+      .jpeg()
+      .toBuffer();
+    const fakeFetch = (() =>
+      Promise.resolve(
+        new Response(new Uint8Array(thumbnail), { headers: { 'content-type': 'image/jpeg' } }),
+      )) as typeof fetch;
+    const proxy = new ArtworkProxy(fakeFetch);
+    const key = proxy.register(ART)?.split('/').at(-1) ?? '';
+    const artwork = await proxy.get(key);
+    expect(artwork?.type).toBe('image/webp');
+
+    const { data, info } = await sharp(artwork?.body).raw().toBuffer({ resolveWithObject: true });
+    expect([info.width, info.height]).toEqual([512, 512]);
+    // Le haut de l'image n'est plus noir : la bande a disparu (bord de 4 px toléré, JPEG).
+    expect(data[(4 * 512 + 256) * info.channels]).toBeGreaterThan(150);
   });
 
   it('refuse ce qui n’est pas une image', async () => {

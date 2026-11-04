@@ -4,7 +4,18 @@ import { mkdir, readdir } from 'node:fs/promises';
 import path from 'node:path';
 import type { Logger } from '../log';
 
-const IMAGE_EXTENSIONS = new Set(['.jpg', '.jpeg', '.png', '.webp', '.avif']);
+const IMAGE_TYPES: Record<string, string> = {
+  '.jpg': 'image/jpeg',
+  '.jpeg': 'image/jpeg',
+  '.png': 'image/png',
+  '.webp': 'image/webp',
+  '.avif': 'image/avif',
+};
+const IMAGE_EXTENSIONS = new Set(Object.keys(IMAGE_TYPES));
+
+export function wallpaperContentType(file: string): string {
+  return IMAGE_TYPES[path.extname(file).toLowerCase()] ?? 'application/octet-stream';
+}
 
 export const WALLPAPER_ROUTE = '/wallpapers/';
 export const WALLPAPER_API_ROUTE = '/api/wallpapers/';

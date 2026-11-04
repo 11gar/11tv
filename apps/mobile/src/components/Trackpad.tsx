@@ -78,34 +78,11 @@ export function Trackpad({ send }: Props) {
   }, []);
 
   return (
-    <div class="trackpad-wrap">
-      <div ref={area} class="trackpad" aria-label="Trackpad">
-        <span class="trackpad__hint">
-          Glisser : déplacer · Toucher : clic
-          <br />
-          Deux doigts : défiler · toucher à deux doigts : clic droit
-        </span>
-      </div>
-      <div class="row">
-        <button
-          type="button"
-          class="button button--secondary"
-          onClick={() => {
-            send({ type: 'pointer-click', button: 'left' });
-          }}
-        >
-          Clic gauche
-        </button>
-        <button
-          type="button"
-          class="button button--secondary"
-          onClick={() => {
-            send({ type: 'pointer-click', button: 'right' });
-          }}
-        >
-          Clic droit
-        </button>
-      </div>
-    </div>
+    <div
+      ref={area}
+      class="trackpad glass"
+      role="application"
+      aria-label="Trackpad : glisser pour déplacer, toucher pour cliquer, deux doigts pour défiler, toucher à deux doigts pour un clic droit"
+    />
   );
 }

@@ -75,6 +75,11 @@ export class WallpaperManager {
     return this.library.has(id);
   }
 
+  /** Chemin de l'image ; `id` doit avoir été vérifié avec `exists`. */
+  imagePath(id: string): string {
+    return this.library.pathOf(id);
+  }
+
   async remove(id: string): Promise<void> {
     const file = this.library.pathOf(id);
     await rm(file);
