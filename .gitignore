@@ -11,3 +11,6 @@ coverage/
 *.pem
 *.crt
 *.key
+
+# Outils tiers téléchargés sur la Surface (Autologon…)
+scripts/tools/

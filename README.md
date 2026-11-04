@@ -3,11 +3,11 @@
 Interface TV personnalisée pour une Surface Pro 8 branchée à la télé, pilotée depuis un
 téléphone Android (PWA) sur le Wi-Fi local.
 
-> **État : phase 3.** Écran d'accueil TV (fonds d'écran en fondu, date et heure), lancement
-> de YouTube, YouTube Music, Disney+ et Prime Video depuis le téléphone, télécommande
-> (pavé, clavier, trackpad, volume), musique qui continue à l'accueil avec sa barre « En
-> cours de lecture », réglages (fonds d'écran, délai, PIN), PWA protégée par PIN. Feuille
-> de route en bas de page.
+> **État : phases 1 à 4 terminées.** Écran d'accueil TV (fonds d'écran en fondu, heure),
+> lancement de YouTube, YouTube Music, Disney+ et Prime Video depuis le téléphone,
+> télécommande (trackpad, clavier, volume), musique qui continue à l'accueil, réglages
+> (fonds d'écran, délai, PIN), PWA protégée par PIN, démarrage automatique et redémarrage
+> nocturne de la Surface. Feuille de route en bas de page.
 
 ## Sommaire
 
@@ -93,8 +93,10 @@ accepté en plus du PIN. Pour repartir de zéro : `pnpm pin:reset`, puis redéma
 
 ## Installation sur la Surface
 
-> Le démarrage automatique (connexion de session, tâche planifiée, redémarrage nocturne)
-> arrive en phase 4 avec `scripts/setup-surface.ps1`. En attendant, le serveur se lance à la main.
+Tout se fait dans la session du **compte local de la TV** (par exemple `tv`), sauf l'étape 6
+qui demande une console administrateur. Créez ce compte au besoin : Paramètres → Comptes →
+Autres utilisateurs → Ajouter un compte → « Je ne dispose pas des informations de connexion
+de cette personne » → « Ajouter un utilisateur sans compte Microsoft ».
 
 1. **Écran** : Paramètres → Système → Écran → « Afficher uniquement sur 2 » (la TV seule).
 2. **Logiciels** : installez Node.js LTS et Git, puis pnpm :
@@ -124,13 +126,61 @@ accepté en plus du PIN. Pour repartir de zéro : `pnpm pin:reset`, puis redéma
    ```bash
    powershell -ExecutionPolicy Bypass -File scripts\edge-login.ps1
    ```
-6. **Réseau** : le Wi-Fi doit être en profil **Privé** (Paramètres → Réseau et Internet →
-   Wi-Fi → votre réseau → Type de profil réseau). Désactivez aussi les « Adresses matérielles
-   aléatoires » pour ce réseau : la box garde alors plus volontiers la même IP.
-7. **Lancement** : `pnpm start`. Windows demande d'autoriser Node sur le pare-feu :
-   cochez **Réseaux privés uniquement**.
-8. **Fonds d'écran** : ajoutez-les depuis le téléphone (Réglages), ou déposez des images
+6. **Configuration de Windows** : téléchargez [Autologon](https://learn.microsoft.com/sysinternals/downloads/autologon)
+   (Sysinternals, Microsoft) et placez `Autologon64.exe` dans `scripts\tools\`. Puis, dans
+   une console PowerShell **ouverte en administrateur**, à la racine du dépôt, lisez d'abord
+   ce que le script va faire (simulation, rien n'est modifié) :
+   ```bash
+   powershell -ExecutionPolicy Bypass -File scripts\setup-surface.ps1 -User tv -DryRun
+   ```
+   puis appliquez (ajoutez `-SetNetworkPrivate` si le Wi-Fi de la maison est en profil
+   public) :
+   ```bash
+   powershell -ExecutionPolicy Bypass -File scripts\setup-surface.ps1 -User tv
+   ```
+   Autologon s'ouvre : saisissez le mot de passe du compte et cliquez sur **Enable**. Il
+   est stocké chiffré par Windows, jamais dans le dépôt.
+7. **Réseau** : dans les paramètres du Wi-Fi, désactivez les « Adresses matérielles
+   aléatoires » : la box garde alors plus volontiers la même IP.
+8. **Redémarrage** : la Surface ouvre la session seule, et 11TV démarre.
+9. **Fonds d'écran** : ajoutez-les depuis le téléphone (Réglages), ou déposez des images
    (JPG, PNG, WebP, AVIF) dans `%LOCALAPPDATA%\11TV\wallpapers` ; la TV se met à jour seule.
+
+### Ce que configure `setup-surface.ps1`
+
+| Domaine        | Réglage                                                                                         |
+| -------------- | ----------------------------------------------------------------------------------------------- |
+| Énergie        | Jamais de veille ni d'écran éteint sur secteur, rabat sans effet, démarrage rapide désactivé    |
+| Windows Update | Heures d'utilisation de 8 h à 2 h : les redémarrages de mise à jour tombent la nuit             |
+| Edge           | Pas d'écran de bienvenue ni de « restaurer les pages », lecture automatique, pas de suggestions |
+| Pare-feu       | Node joignable sur les ports 8443 et 8081 depuis le réseau privé uniquement                     |
+| Démarrage      | Tâche « 11TV » à l'ouverture de session : `scripts\run-11tv.ps1`                                |
+| Nuit           | Tâche « 11TV - redémarrage nocturne » à 4 h, si la TV ne sert pas ; au plus tard à 5 h 45       |
+| Connexion      | Ouverture de session automatique du compte de la TV (Autologon)                                 |
+
+Le **lanceur** (`run-11tv.ps1`) coupe les notifications de la session, démarre le serveur et
+le relance s'il s'arrête ou ne répond plus (vérification toutes les 30 s). Le **redémarrage
+nocturne** attend que la TV soit sur l'accueil sans musique ; il installe au passage les
+mises à jour Windows en attente.
+
+### Mettre à jour
+
+Depuis la session de la TV, sans droits d'administrateur :
+
+```bash
+powershell -ExecutionPolicy Bypass -File scripts\update.ps1
+```
+
+Le script récupère le code, réinstalle les dépendances, reconstruit, puis arrête le
+serveur : le lanceur le relance avec la nouvelle version quelques secondes plus tard.
+
+### Journaux
+
+| Fichier                                 | Contenu                            |
+| --------------------------------------- | ---------------------------------- |
+| `%LOCALAPPDATA%\11TV\logs\11tv.log`     | Serveur (10 Mo au plus, 5 anciens) |
+| `%LOCALAPPDATA%\11TV\logs\launcher.log` | Démarrages et relances du serveur  |
+| `%ProgramData%\11TV\nightly-reboot.log` | Décisions du redémarrage nocturne  |
 
 ## Utilisation
 
@@ -222,4 +272,4 @@ Données (jamais dans le dépôt), dans `%LOCALAPPDATA%\11TV\` :
 - [x] **Phase 3** : YouTube Music (dernière écoute, lancement, contrôles).
   - [x] Retour à l'accueil sans couper la musique (lecture dans une fenêtre réduite).
   - [x] Barre « En cours de lecture » sur la TV : pochette, titre, artiste.
-- [ ] **Phase 4** : démarrage automatique, redémarrage nocturne, robustesse.
+- [x] **Phase 4** : démarrage automatique, redémarrage nocturne, robustesse.

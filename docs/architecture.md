@@ -50,6 +50,11 @@ TV (PIN d'appairage) depuis le réseau.
 
 ## Robustesse
 
+- **Serveur** : lancé par `scripts/run-11tv.ps1` (tâche planifiée à l'ouverture de session),
+  qui le relance s'il s'arrête ou si `/api/health` ne répond plus. Une exception non gérée
+  arrête le serveur plutôt que de le laisser dans un état inconnu.
+- **Nuit** : redémarrage de la Surface si la TV ne sert pas, mises à jour Windows comprises.
+- **Journaux** : rotation par taille faite par le serveur (10 Mo, 5 fichiers).
 - **Edge** : boucle de réconciliation toutes les 5 s (port de debug -> connexion -> onglet).
   Edge est détaché du serveur : un redémarrage du serveur ne ferme pas le kiosque, ni la
   fenêtre de musique, retrouvée par son URL.
@@ -75,3 +80,4 @@ Les choix structurants sont détaillés dans [adr/](adr/) :
 4. [Monorepo pnpm et serveur regroupé par esbuild](adr/0004-monorepo-et-build.md)
 5. [Entrées clavier et souris](adr/0005-entrees-clavier-souris.md)
 6. [YouTube Music (phase 3)](adr/0006-youtube-music.md)
+7. [Démarrage automatique et robustesse (phase 4)](adr/0007-demarrage-automatique.md)

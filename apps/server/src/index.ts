@@ -23,17 +23,30 @@ import { WallpaperManager } from './wallpapers/manager';
 
 const SESSION_TTL_MS = 90 * 24 * 60 * 60 * 1000;
 const ADDRESS_CHECK_INTERVAL_MS = 60_000;
+const LOG_ROTATION_INTERVAL_MS = 60 * 60_000;
 
 async function main(): Promise<void> {
   loadDotEnv();
   const config = loadConfig();
   await mkdir(config.paths.data, { recursive: true });
-  const log = createLogger(config);
+  const { log, rotate: rotateLogs } = await createLogger(config);
   log.info({ dataDir: config.paths.data, env: config.env }, 'Démarrage de 11TV');
 
   process.on('unhandledRejection', (err) => {
     log.error({ err }, 'Promesse rejetée non gérée');
   });
+  // État inconnu après une exception non rattrapée : on s'arrête, le lanceur redémarre le
+  // serveur (scripts/run-11tv.ps1). Edge, détaché, reste ouvert.
+  process.on('uncaughtException', (err) => {
+    log.fatal({ err }, 'Exception non gérée, arrêt du serveur');
+    log.flush();
+    process.exit(1);
+  });
+  const logRotation = setInterval(() => {
+    rotateLogs().catch((err: unknown) => {
+      log.warn({ err }, 'Rotation des journaux impossible');
+    });
+  }, LOG_ROTATION_INTERVAL_MS);
 
   // --- Réglages et authentification ---------------------------------------------------
   const settings = await SettingsService.load(config.paths.settings, log);
@@ -165,6 +178,7 @@ async function main(): Promise<void> {
     stopping = true;
     log.info({ signal }, 'Arrêt de 11TV');
     clearInterval(addressWatch);
+    clearInterval(logRotation);
     music.stop();
     wallpapers.close();
     await browser.stop();

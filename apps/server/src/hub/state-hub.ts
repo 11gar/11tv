@@ -3,6 +3,7 @@ import {
   musicTrackUrl,
   serviceForUrl,
   type AppState,
+  type BrowserStatus,
   type ClientMessage,
   type PairingInfo,
   type ServerMessage,
@@ -98,6 +99,18 @@ export class StateHub {
 
   get remoteCount(): number {
     return [...this.clients].filter((c) => c.role === 'remote').length;
+  }
+
+  /** Résumé pour les scripts locaux : la TV est-elle en train de servir à quelque chose ? */
+  health(): { browser: BrowserStatus; view: View; musicPlaying: boolean; idle: boolean } {
+    const musicPlaying = this.deps.music.playing;
+    const view = this.view;
+    return {
+      browser: this.deps.browser.status,
+      view,
+      musicPlaying,
+      idle: view === 'home' && !musicPlaying,
+    };
   }
 
   async handle(message: ClientMessage): Promise<void> {

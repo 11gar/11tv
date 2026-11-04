@@ -33,6 +33,10 @@ export async function buildTvApp(
     maxAge: '1h',
   });
 
+  // Santé du serveur, pour le lanceur (serveur bloqué ?) et le redémarrage nocturne (TV
+  // inutilisée ?). Boucle locale uniquement, comme tout ce serveur.
+  app.get('/api/health', () => ({ ...hub.health(), uptimeSec: Math.round(process.uptime()) }));
+
   registerArtworkRoute(app, artwork);
   registerHubSocket(app, hub, 'tv');
   await serveSpa(app, config.paths.tvDist, 'TV');

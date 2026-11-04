@@ -254,6 +254,16 @@ describe('StateHub : musique', () => {
     ]);
   });
 
+  it('résume l’état pour le redémarrage nocturne : inactive seulement à l’accueil sans musique', async () => {
+    const { hub, music } = setup();
+    expect(hub.health()).toMatchObject({ view: 'home', musicPlaying: false, idle: true });
+    music.playing = true;
+    expect(hub.health()).toMatchObject({ musicPlaying: true, idle: false });
+    music.playing = false;
+    await hub.handle({ type: 'launch', service: 'prime-video' });
+    expect(hub.health()).toMatchObject({ view: 'prime-video', idle: false });
+  });
+
   it('met la musique en pause quand on lance un autre service, et transmet les commandes', async () => {
     const { hub, music } = setup();
     music.playing = true;
