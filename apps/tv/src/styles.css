@@ -141,6 +141,104 @@ body {
   letter-spacing: 0.02em;
 }
 
+/* --- En cours de lecture ------------------------------------------------- */
+
+/* En haut à gauche, en miroir de l'horloge, à la même hauteur que l'heure. */
+.now-playing {
+  position: absolute;
+  top: 5vh;
+  left: 4vw;
+  display: flex;
+  align-items: center;
+  gap: 1.3vw;
+  max-width: 40vw;
+  padding: 0.9vw 1.6vw 0.9vw 0.9vw;
+  border-radius: 1.2vw;
+  background: var(--panel);
+  backdrop-filter: blur(16px);
+  transition: transform 3s ease;
+  animation: fade-in 800ms ease both;
+}
+
+.now-playing--hidden {
+  animation: fade-out 800ms ease both;
+}
+
+@keyframes fade-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+.now-playing__art {
+  position: relative;
+  flex: 0 0 auto;
+  width: 5.5vw;
+  height: 5.5vw;
+  border-radius: 0.6vw;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.now-playing__art img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.now-playing__paused {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: rgba(0, 0, 0, 0.45);
+  font-size: 1.4vw;
+  letter-spacing: -0.1em;
+}
+
+.now-playing__text {
+  min-width: 0;
+  flex: 1;
+}
+
+.now-playing__title,
+.now-playing__artist {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.now-playing__title {
+  font-size: 1.45vw;
+  font-weight: 600;
+}
+
+.now-playing__artist {
+  margin-top: 0.2vw;
+  font-size: 1.1vw;
+  color: var(--text-dim);
+}
+
+.now-playing__progress {
+  margin-top: 0.8vw;
+  width: 22vw;
+  max-width: 100%;
+  height: 0.22vw;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.18);
+  overflow: hidden;
+}
+
+.now-playing__bar {
+  height: 100%;
+  background: var(--text);
+  transform-origin: left;
+  transition: transform 500ms linear;
+}
+
 /* --- Appairage ----------------------------------------------------------- */
 
 .pairing {

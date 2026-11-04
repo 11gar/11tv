@@ -4,6 +4,8 @@ import Fastify from 'fastify';
 import type { AppConfig } from '../config';
 import type { StateHub } from '../hub/state-hub';
 import { fastifyLogging, type Logger } from '../log';
+import type { ArtworkProxy } from '../music/artwork';
+import { registerArtworkRoute } from './artwork-route';
 import { WALLPAPER_ROUTE } from '../wallpapers/library';
 import { addSecurityHeaders, restrictToLoopback, serveSpa } from './common';
 import { registerHubSocket } from './hub-socket';
@@ -12,7 +14,12 @@ import { registerHubSocket } from './hub-socket';
  * Serveur de l'écran TV, en HTTP sur 127.0.0.1 uniquement : seul Edge, sur la même
  * machine, y accède. Pas de PIN ici, et localhost est un contexte sécurisé pour le navigateur.
  */
-export async function buildTvApp(config: AppConfig, log: Logger, hub: StateHub) {
+export async function buildTvApp(
+  config: AppConfig,
+  log: Logger,
+  hub: StateHub,
+  artwork: ArtworkProxy,
+) {
   const app = Fastify(fastifyLogging(log, 'tv'));
 
   restrictToLoopback(app);
@@ -26,6 +33,7 @@ export async function buildTvApp(config: AppConfig, log: Logger, hub: StateHub) 
     maxAge: '1h',
   });
 
+  registerArtworkRoute(app, artwork);
   registerHubSocket(app, hub, 'tv');
   await serveSpa(app, config.paths.tvDist, 'TV');
 

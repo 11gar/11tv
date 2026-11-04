@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildEdgeArgs, type EdgeOptions } from './edge-browser';
+import { buildEdgeArgs, pickPages, type EdgeOptions } from './edge-browser';
 
 const base: EdgeOptions = {
   executable: 'msedge.exe',
@@ -25,5 +25,20 @@ describe('buildEdgeArgs', () => {
     const args = buildEdgeArgs({ ...base, kiosk: false });
     expect(args).toContain('--app=http://127.0.0.1:8080/');
     expect(args).not.toContain('--kiosk');
+  });
+});
+
+describe('pickPages', () => {
+  const home = 'http://127.0.0.1:8080/';
+  const music = 'https://music.youtube.com/watch?v=abc';
+
+  it('retrouve la fenêtre de musique à côté de l’onglet principal, dans les deux ordres', () => {
+    expect(pickPages([home, music])).toEqual({ main: 0, music: 1 });
+    expect(pickPages([music, home])).toEqual({ main: 1, music: 0 });
+  });
+
+  it('considère un onglet YouTube Music seul comme l’onglet principal', () => {
+    expect(pickPages([music])).toEqual({ main: 0, music: null });
+    expect(pickPages([home, 'https://www.youtube.com/'])).toEqual({ main: 0, music: null });
   });
 });

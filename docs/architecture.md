@@ -9,6 +9,7 @@ apps/server
   hub/state-hub.ts    cœur : commandes des clients -> navigateur, diffusion de l'état
   browser/            BrowserController (interface) et EdgeBrowser (CDP via playwright-core)
   input/              RemoteControl (télécommande -> touches CDP / souris), pilote SendInput
+  music/              suivi et commandes de YouTube Music, historique, relais des pochettes
   auth/               PIN (scrypt), limiteur de tentatives, sessions, AuthService
   http/               lan-app (téléphone, HTTPS), tv-app (127.0.0.1), setup-app (certificat)
   tls/                autorité locale à contraintes de nom, certificat serveur
@@ -30,6 +31,11 @@ apps/tv, apps/mobile  interfaces Preact construites par Vite et servies par le s
 
 L'état affiché vient donc de ce que fait vraiment Edge, pas de ce qui a été demandé.
 
+YouTube Music suit un chemin à part : il a sa propre fenêtre Edge, affichée en plein écran
+ou réduite, et la vue `youtube-music` correspond à cette fenêtre au premier plan.
+`MusicService` interroge la page chaque seconde et ne rediffuse l'état qu'aux changements
+visibles ; voir [l'ADR 0006](adr/0006-youtube-music.md).
+
 ## Trois serveurs HTTP
 
 | Serveur     | Écoute             | Public                  | Protection                            |
@@ -45,7 +51,8 @@ TV (PIN d'appairage) depuis le réseau.
 ## Robustesse
 
 - **Edge** : boucle de réconciliation toutes les 5 s (port de debug -> connexion -> onglet).
-  Edge est détaché du serveur : un redémarrage du serveur ne ferme pas le kiosque.
+  Edge est détaché du serveur : un redémarrage du serveur ne ferme pas le kiosque, ni la
+  fenêtre de musique, retrouvée par son URL.
 - **WebSocket** : ping de protocole côté serveur, message `heartbeat` pour le client, délai
   de reconnexion exponentiel avec une part aléatoire, reconnexion immédiate au réveil du téléphone.
 - **IP dynamique** : vérifiée chaque minute ; le certificat est réémis et rechargé à chaud

@@ -2,15 +2,18 @@ import type { AppState, ClientMessage } from '@11tv/shared';
 import { useAppSocket } from '@11tv/web';
 import { useCallback, useEffect, useState } from 'preact/hooks';
 import { fetchSession } from './api';
+import { MiniPlayer } from './components/MiniPlayer';
 import { Home } from './screens/Home';
+import { Music } from './screens/Music';
 import { Remote } from './screens/Remote';
 import { Settings } from './screens/Settings';
 
-type Tab = 'home' | 'remote' | 'settings';
+type Tab = 'home' | 'remote' | 'music' | 'settings';
 
 const TABS: { id: Tab; label: string; icon: string }[] = [
   { id: 'home', label: 'Accueil', icon: '⌂' },
   { id: 'remote', label: 'Télécommande', icon: '✥' },
+  { id: 'music', label: 'Musique', icon: '♫' },
   { id: 'settings', label: 'Réglages', icon: '⚙' },
 ];
 
@@ -86,9 +89,15 @@ export function Shell({ onSessionLost }: Props) {
   }, [toast]);
 
   const screen: ScreenProps = { state, send, notify };
+  const nowPlaying = state?.music.nowPlaying ?? null;
+  const showMiniPlayer = nowPlaying !== null && tab !== 'music';
+  const selectTab = (next: Tab) => {
+    setTab(next);
+    saveTab(next);
+  };
 
   return (
-    <div class="shell">
+    <div class={showMiniPlayer ? 'shell shell--mini-player' : 'shell'}>
       <header class="shell__header">
         <h1 class="shell__title">11TV</h1>
         <span class={`dot dot--${status}`} title={status === 'open' ? 'Connecté' : 'Hors ligne'} />
@@ -97,8 +106,21 @@ export function Shell({ onSessionLost }: Props) {
       <main class="shell__content">
         {tab === 'home' && <Home {...screen} />}
         {tab === 'remote' && <Remote {...screen} />}
+        {tab === 'music' && <Music {...screen} />}
         {tab === 'settings' && <Settings {...screen} onLogout={onSessionLost} />}
       </main>
+
+      {showMiniPlayer && (
+        <MiniPlayer
+          nowPlaying={nowPlaying}
+          onAction={(action) => {
+            send({ type: 'music', action });
+          }}
+          onOpen={() => {
+            selectTab('music');
+          }}
+        />
+      )}
 
       <nav class="tabbar">
         {TABS.map((t) => (
@@ -107,8 +129,7 @@ export function Shell({ onSessionLost }: Props) {
             type="button"
             class={t.id === tab ? 'tabbar__item tabbar__item--active' : 'tabbar__item'}
             onClick={() => {
-              setTab(t.id);
-              saveTab(t.id);
+              selectTab(t.id);
             }}
           >
             <span class="tabbar__icon" aria-hidden="true">

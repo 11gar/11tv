@@ -3,10 +3,11 @@
 Interface TV personnalisée pour une Surface Pro 8 branchée à la télé, pilotée depuis un
 téléphone Android (PWA) sur le Wi-Fi local.
 
-> **État : phase 2.** Écran d'accueil TV (fonds d'écran en fondu, date et heure), lancement
+> **État : phase 3.** Écran d'accueil TV (fonds d'écran en fondu, date et heure), lancement
 > de YouTube, YouTube Music, Disney+ et Prime Video depuis le téléphone, télécommande
-> (pavé, clavier, trackpad, volume), réglages (fonds d'écran, délai, PIN), PWA protégée par
-> PIN. Feuille de route en bas de page.
+> (pavé, clavier, trackpad, volume), musique qui continue à l'accueil avec sa barre « En
+> cours de lecture », réglages (fonds d'écran, délai, PIN), PWA protégée par PIN. Feuille
+> de route en bas de page.
 
 ## Sommaire
 
@@ -149,6 +150,12 @@ Les touches passent par Edge lui-même : elles fonctionnent même si Edge n'a pa
 La souris et le volume passent par Windows (`SendInput`) : le serveur doit tourner dans la
 session de l'utilisateur, pas comme service.
 
+**Musique** : YouTube Music s'ouvre dans sa propre fenêtre. « Accueil » la met de côté sans
+couper la lecture, et l'écran d'accueil affiche alors le titre en cours (pochette, titre,
+artiste). L'onglet Musique du téléphone montre le titre en cours avec ses commandes
+(précédent, lecture/pause, suivant) et les titres écoutés récemment sur la TV, à relancer
+d'un appui. Lancer YouTube, Disney+ ou Prime Video met la musique en pause.
+
 **Réglages** : ajout d'images (JPEG, PNG ou WebP ; elles sont réduites à 3840 px, converties
 en WebP et débarrassées de leurs métadonnées, position GPS comprise), ordre, suppression,
 délai de défilement, changement de PIN (les autres téléphones sont déconnectés).
@@ -183,15 +190,16 @@ valeurs par défaut conviennent.
 
 Données (jamais dans le dépôt), dans `%LOCALAPPDATA%\11TV\` :
 
-| Chemin          | Contenu                                         |
-| --------------- | ----------------------------------------------- |
-| `settings.json` | Réglages et empreinte du PIN                    |
-| `sessions.json` | Empreintes des jetons de session des téléphones |
-| `certs/`        | Autorité locale et certificat du serveur        |
-| `wallpapers/`   | Fonds d'écran                                   |
-| `thumbs/`       | Vignettes des fonds d'écran (régénérables)      |
-| `edge-profile/` | Profil Edge du kiosque (cookies des services)   |
-| `logs/11tv.log` | Journaux JSON                                   |
+| Chemin               | Contenu                                         |
+| -------------------- | ----------------------------------------------- |
+| `settings.json`      | Réglages et empreinte du PIN                    |
+| `sessions.json`      | Empreintes des jetons de session des téléphones |
+| `music-history.json` | Titres écoutés récemment sur la TV              |
+| `certs/`             | Autorité locale et certificat du serveur        |
+| `wallpapers/`        | Fonds d'écran                                   |
+| `thumbs/`            | Vignettes des fonds d'écran (régénérables)      |
+| `edge-profile/`      | Profil Edge du kiosque (cookies des services)   |
+| `logs/11tv.log`      | Journaux JSON                                   |
 
 ## Sécurité
 
@@ -212,5 +220,7 @@ Données (jamais dans le dépôt), dans `%LOCALAPPDATA%\11TV\` :
       PWA avec PIN.
 - [x] **Phase 2** : télécommande (pavé, OK, retour, clavier, trackpad), réglages des fonds
       d'écran et du délai, changement de PIN.
-- [ ] **Phase 3** : YouTube Music (dernière écoute, lancement, contrôles).
+- [x] **Phase 3** : YouTube Music (dernière écoute, lancement, contrôles).
+  - [x] Retour à l'accueil sans couper la musique (lecture dans une fenêtre réduite).
+  - [x] Barre « En cours de lecture » sur la TV : pochette, titre, artiste.
 - [ ] **Phase 4** : démarrage automatique, redémarrage nocturne, robustesse.

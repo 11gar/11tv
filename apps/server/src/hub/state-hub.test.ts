@@ -6,16 +6,36 @@ import {
   BrowserUnavailableError,
   type BrowserController,
   type BrowserEvents,
+  type Foreground,
 } from '../browser/browser-controller';
 import { UserFacingError } from '../errors';
 import { RemoteControl } from '../input/remote-control';
 import type { InputDriver } from '../input/input-driver';
-import { StateHub, viewForUrl, type ClientRole, type HubClient } from './state-hub';
+import { StateHub, viewForUrl, type ClientRole, type HubClient, type HubMusic } from './state-hub';
+
+class FakeMusic implements HubMusic {
+  playing = false;
+  readonly calls: string[] = [];
+  state() {
+    return { nowPlaying: null, recent: [] };
+  }
+  control(action: string): Promise<void> {
+    this.calls.push(action);
+    return Promise.resolve();
+  }
+  pause(): Promise<void> {
+    if (this.playing) this.calls.push('pause');
+    this.playing = false;
+    return Promise.resolve();
+  }
+}
 
 const HOME = 'http://127.0.0.1:8080/';
 
 class FakeBrowser extends EventEmitter<BrowserEvents> implements BrowserController {
   status: BrowserStatus = 'ready';
+  foreground: Foreground = 'main';
+  hasMusic = false;
   readonly calls: string[] = [];
   start(): void {
     this.emit('status', this.status);
@@ -26,8 +46,28 @@ class FakeBrowser extends EventEmitter<BrowserEvents> implements BrowserControll
   navigate(url: string): Promise<void> {
     if (this.status !== 'ready') return Promise.reject(new BrowserUnavailableError());
     this.calls.push(`goto ${url}`);
+    this.setForeground('main');
     this.emit('navigated', url);
     return Promise.resolve();
+  }
+  showMusic(url: string, reload: boolean): Promise<void> {
+    this.calls.push(this.hasMusic && !reload ? 'show music' : `music ${url}`);
+    this.hasMusic = true;
+    this.setForeground('music');
+    return Promise.resolve();
+  }
+  showMain(): Promise<void> {
+    this.calls.push('show main');
+    this.setForeground('main');
+    return Promise.resolve();
+  }
+  evaluateInMusic(): Promise<unknown> {
+    return Promise.resolve(undefined);
+  }
+  private setForeground(foreground: Foreground): void {
+    if (this.foreground === foreground) return;
+    this.foreground = foreground;
+    this.emit('foreground', foreground);
   }
   goBack(): Promise<void> {
     this.calls.push('back');
@@ -70,6 +110,7 @@ const pairing: PairingInfo = {
 
 function setup() {
   const browser = new FakeBrowser();
+  const music = new FakeMusic();
   const input = new FakeInput();
   let interval = 30;
   let images: Wallpaper[] = [
@@ -79,6 +120,7 @@ function setup() {
   const hub = new StateHub(
     {
       browser,
+      music,
       remote: new RemoteControl(browser, input),
       homeUrl: HOME,
       settings: {
@@ -110,7 +152,7 @@ function setup() {
     const c: HubClient = { role, send: (m) => received.push(m) };
     return { c, received, last: () => received.at(-1) };
   };
-  return { browser, input, hub, client, images: () => images };
+  return { browser, music, input, hub, client, images: () => images };
 }
 
 describe('viewForUrl', () => {
@@ -177,6 +219,47 @@ describe('StateHub : navigation', () => {
     await expect(hub.handle({ type: 'launch', service: 'youtube' })).rejects.toBeInstanceOf(
       BrowserUnavailableError,
     );
+  });
+});
+
+describe('StateHub : musique', () => {
+  const MUSIC = 'https://music.youtube.com/';
+
+  it('affiche YouTube Music dans sa fenêtre et revient à l’accueil sans la fermer', async () => {
+    const { hub, client, browser } = setup();
+    const remote = client('remote');
+    hub.addClient(remote.c);
+
+    await hub.handle({ type: 'launch', service: 'youtube-music' });
+    expect(browser.calls).toEqual([`music ${MUSIC}`]);
+    expect(remote.last()).toMatchObject({ state: { view: 'youtube-music' } });
+
+    await hub.handle({ type: 'home' });
+    // L'onglet principal est déjà sur l'accueil : il n'est pas rechargé, la musique est réduite.
+    expect(browser.calls.at(-1)).toBe('show main');
+    expect(remote.last()).toMatchObject({ state: { view: 'home' } });
+
+    await hub.handle({ type: 'launch', service: 'youtube-music' });
+    expect(browser.calls.at(-1)).toBe('show music');
+  });
+
+  it('ramène l’onglet principal à l’accueil avant d’afficher la musique', async () => {
+    const { hub, browser } = setup();
+    await hub.handle({ type: 'launch', service: 'youtube' });
+    await hub.handle({ type: 'play-track', videoId: 'dQw4w9WgXcQ', playlistId: 'RDAMVM1' });
+    expect(browser.calls).toEqual([
+      'goto https://www.youtube.com/',
+      `goto ${HOME}`,
+      `music ${MUSIC}watch?v=dQw4w9WgXcQ&list=RDAMVM1`,
+    ]);
+  });
+
+  it('met la musique en pause quand on lance un autre service, et transmet les commandes', async () => {
+    const { hub, music } = setup();
+    music.playing = true;
+    await hub.handle({ type: 'music', action: 'next' });
+    await hub.handle({ type: 'launch', service: 'disney-plus' });
+    expect(music.calls).toEqual(['next', 'pause']);
   });
 });
 

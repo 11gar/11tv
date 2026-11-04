@@ -1,5 +1,6 @@
 // Types seulement : les schémas zod qui les valident vivent dans ./schemas, importé par le
 // serveur uniquement, pour ne pas embarquer zod dans les interfaces web.
+import type { MusicAction, MusicState } from './music';
 import type { RemoteKey, VolumeAction, MouseButton } from './remote';
 import type { ServiceId } from './services';
 
@@ -19,6 +20,9 @@ export type ClientMessage =
   | { type: 'pointer-click'; button: MouseButton }
   | { type: 'pointer-scroll'; dy: number }
   | { type: 'volume'; action: VolumeAction }
+  // Musique
+  | { type: 'music'; action: MusicAction }
+  | { type: 'play-track'; videoId: string; playlistId: string | null }
   // Réglages
   | { type: 'set-slide-interval'; seconds: number }
   | { type: 'delete-wallpaper'; id: string }
@@ -30,7 +34,7 @@ export type ClientMessageType = ClientMessage['type'];
 // État partagé, poussé en entier à chaque changement (il reste petit)
 // ---------------------------------------------------------------------------
 
-/** Ce qu'affiche l'onglet principal d'Edge. */
+/** Ce qu'affiche la TV : l'onglet principal d'Edge, ou YouTube Music quand il est devant. */
 export type View = 'home' | ServiceId | 'other';
 
 export type BrowserStatus = 'starting' | 'ready' | 'unavailable';
@@ -51,6 +55,7 @@ export interface AppState {
   wallpapers: Wallpaper[];
   /** Faux si le pilote souris et volume de Windows n'est pas disponible. */
   pointerAvailable: boolean;
+  music: MusicState;
 }
 
 export interface PairingInfo {

@@ -10,6 +10,9 @@ import { buildSetupApp } from './http/setup-app';
 import { buildTvApp } from './http/tv-app';
 import { StateHub } from './hub/state-hub';
 import { createLogger } from './log';
+import { ArtworkProxy } from './music/artwork';
+import { MusicHistory } from './music/history';
+import { MusicService } from './music/music-service';
 import { getLanAddresses } from './net/addresses';
 import { SettingsService } from './settings/settings';
 import { TlsManager } from './tls/tls-manager';
@@ -72,9 +75,17 @@ async function main(): Promise<void> {
   const wallpapers = new WallpaperLibrary(config.paths.wallpapers, log);
   const wallpaperManager = new WallpaperManager(wallpapers, settings, config.paths.thumbs, log);
   const remote = new RemoteControl(browser, createInputDriver(log.child({ module: 'input' })));
+  const artwork = new ArtworkProxy();
+  const music = new MusicService(
+    browser,
+    await MusicHistory.load(config.paths.musicHistory, log),
+    artwork,
+    log.child({ module: 'musique' }),
+  );
   const hub = new StateHub(
     {
       browser,
+      music,
       remote,
       homeUrl,
       settings: {
@@ -99,18 +110,22 @@ async function main(): Promise<void> {
   auth.on('pairingChange', () => {
     hub.broadcast();
   });
+  music.on('change', () => {
+    hub.broadcast();
+  });
   await wallpapers.init(() => {
     hub.broadcast();
   });
 
   // --- Serveurs HTTP ------------------------------------------------------------------
-  const tvApp = await buildTvApp(config, log, hub);
+  const tvApp = await buildTvApp(config, log, hub, artwork);
   const lanApp = await buildLanApp({
     config,
     log,
     hub,
     auth,
     wallpapers: wallpaperManager,
+    artwork,
     tls: { key: certificate.keyPem, cert: certificate.certPem },
   });
   const setupApp = buildSetupApp(log, {
@@ -123,6 +138,7 @@ async function main(): Promise<void> {
   await lanApp.listen({ host: '0.0.0.0', port: config.ports.https });
   await setupApp.listen({ host: '0.0.0.0', port: config.ports.setup });
   browser.start();
+  music.start();
 
   // --- Changement d'adresse IP (pas d'IP fixe) ----------------------------------------
   const addressWatch = setInterval(() => {
@@ -149,6 +165,7 @@ async function main(): Promise<void> {
     stopping = true;
     log.info({ signal }, 'Arrêt de 11TV');
     clearInterval(addressWatch);
+    music.stop();
     wallpapers.close();
     await browser.stop();
     await Promise.allSettled([tvApp.close(), lanApp.close(), setupApp.close()]);

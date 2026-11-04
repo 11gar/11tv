@@ -1,5 +1,6 @@
 import {
   getService,
+  musicTrackUrl,
   serviceForUrl,
   type AppState,
   type ClientMessage,
@@ -13,6 +14,7 @@ import type { BrowserController } from '../browser/browser-controller';
 import { UserFacingError } from '../errors';
 import type { RemoteControl } from '../input/remote-control';
 import type { Logger } from '../log';
+import type { MusicService } from '../music/music-service';
 
 export type ClientRole = 'tv' | 'remote';
 
@@ -34,8 +36,11 @@ export interface HubWallpapers {
   reorder(order: readonly string[]): Promise<void>;
 }
 
+export type HubMusic = Pick<MusicService, 'state' | 'control' | 'pause' | 'playing'>;
+
 export interface HubDeps {
   browser: BrowserController;
+  music: HubMusic;
   remote: Pick<
     RemoteControl,
     'pointerAvailable' | 'key' | 'text' | 'back' | 'move' | 'click' | 'scroll' | 'volume'
@@ -59,7 +64,8 @@ export function viewForUrl(url: string, homeUrl: string): View {
  */
 export class StateHub {
   private readonly clients = new Set<HubClient>();
-  private view: View = 'home';
+  /** Ce qu'affiche l'onglet principal (la fenêtre de musique peut être devant). */
+  private mainView: View = 'home';
 
   constructor(
     private readonly deps: HubDeps,
@@ -68,13 +74,20 @@ export class StateHub {
     deps.browser.on('status', () => {
       this.broadcast();
     });
+    deps.browser.on('foreground', () => {
+      this.broadcast();
+    });
     deps.browser.on('navigated', (url) => {
       const view = viewForUrl(url, deps.homeUrl);
-      if (view === this.view) return;
-      this.view = view;
+      if (view === this.mainView) return;
+      this.mainView = view;
       this.log.debug({ view, url }, 'Vue changée');
       this.broadcast();
     });
+  }
+
+  private get view(): View {
+    return this.deps.browser.foreground === 'music' ? 'youtube-music' : this.mainView;
   }
 
   addClient(client: HubClient): () => void {
@@ -88,15 +101,20 @@ export class StateHub {
   }
 
   async handle(message: ClientMessage): Promise<void> {
-    const { browser, remote, settings, wallpapers } = this.deps;
+    const { browser, music, remote, settings, wallpapers } = this.deps;
     switch (message.type) {
       case 'launch': {
         const service = getService(message.service);
         this.log.info({ service: service.id }, 'Lancement d’un service');
+        if (service.id === 'youtube-music') return this.openMusic(service.url, false);
+        // Pas deux sons à la fois : la musique se met en pause quand on lance une vidéo.
+        await music.pause();
         return browser.navigate(service.url);
       }
       case 'home':
         this.log.info('Retour à l’accueil');
+        // La musique continue : seule sa fenêtre est réduite.
+        if (this.mainView === 'home') return browser.showMain();
         return browser.navigate(this.deps.homeUrl);
       case 'history-back':
         return remote.back();
@@ -118,6 +136,12 @@ export class StateHub {
         remote.volume(message.action);
         return;
 
+      case 'music':
+        return music.control(message.action);
+      case 'play-track':
+        this.log.info({ videoId: message.videoId }, 'Lecture d’un titre');
+        return this.openMusic(musicTrackUrl(message.videoId, message.playlistId), true);
+
       case 'set-slide-interval':
         return settings.setSlideInterval(message.seconds);
       case 'delete-wallpaper':
@@ -128,7 +152,16 @@ export class StateHub {
     }
   }
 
-  /** À appeler quand une source externe change (réglages, fonds d'écran, appairage). */
+  /**
+   * Affiche YouTube Music. L'onglet principal revient d'abord à l'accueil : une vidéo qui y
+   * jouait s'arrête, et c'est l'accueil qu'on retrouvera en réduisant la musique.
+   */
+  private async openMusic(url: string, reload: boolean): Promise<void> {
+    if (this.mainView !== 'home') await this.deps.browser.navigate(this.deps.homeUrl);
+    await this.deps.browser.showMusic(url, reload);
+  }
+
+  /** À appeler quand une source externe change (réglages, fonds d'écran, appairage, musique). */
   broadcast(): void {
     for (const client of this.clients) this.sendState(client);
   }
@@ -140,6 +173,7 @@ export class StateHub {
       slideIntervalSec: this.deps.settings.slideIntervalSec(),
       wallpapers: this.deps.wallpapers.list(),
       pointerAvailable: this.deps.remote.pointerAvailable,
+      music: this.deps.music.state(),
     };
   }
 

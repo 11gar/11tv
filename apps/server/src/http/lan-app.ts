@@ -15,8 +15,10 @@ import type { AuthService, LoginResult } from '../auth/auth-service';
 import type { AppConfig } from '../config';
 import type { StateHub } from '../hub/state-hub';
 import { fastifyLogging, type Logger } from '../log';
+import type { ArtworkProxy } from '../music/artwork';
 import { normalizeAddress } from '../net/addresses';
 import { InvalidImageError, type WallpaperManager } from '../wallpapers/manager';
+import { registerArtworkRoute } from './artwork-route';
 import { addSecurityHeaders, restrictToPrivateNetwork, serveSpa } from './common';
 import { registerHubSocket } from './hub-socket';
 
@@ -31,6 +33,7 @@ export interface LanAppDeps {
   hub: StateHub;
   auth: AuthService;
   wallpapers: WallpaperManager;
+  artwork: ArtworkProxy;
   tls: { key: string; cert: string };
 }
 
@@ -68,7 +71,15 @@ function replyWithSession(reply: FastifyReply, result: LoginResult) {
 }
 
 /** Serveur HTTPS du téléphone, exposé au réseau local et protégé par le PIN. */
-export async function buildLanApp({ config, log, hub, auth, wallpapers, tls }: LanAppDeps) {
+export async function buildLanApp({
+  config,
+  log,
+  hub,
+  auth,
+  wallpapers,
+  artwork,
+  tls,
+}: LanAppDeps) {
   const dev = config.env === 'development';
   const app = Fastify({
     ...fastifyLogging(log, 'telephone'),
@@ -171,6 +182,8 @@ export async function buildLanApp({ config, log, hub, auth, wallpapers, tls }: L
   async function requireSessionForImages(req: FastifyRequest, reply: FastifyReply) {
     if (!auth.authenticate(req.cookies[SESSION_COOKIE])) return reply.code(401).send();
   }
+
+  registerArtworkRoute(app, artwork, requireSessionForImages);
 
   // Session revérifiée à chaque heartbeat : un téléphone révoqué (PIN changé) est coupé.
   registerHubSocket(app, hub, 'remote', {
