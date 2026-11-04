@@ -688,3 +688,9 @@ button {
 .key--primary:disabled {
   opacity: 0.35;
 }
+
+.diagnostics {
+  margin: 0;
+  font-size: 0.75rem;
+  text-align: center;
+}

@@ -1,8 +1,26 @@
 import { logout } from '../api';
+import { displayMode } from '../display-mode';
 import { PinSettings } from '../components/PinSettings';
 import { SlideIntervalSettings } from '../components/SlideIntervalSettings';
 import { WallpaperSettings } from '../components/WallpaperSettings';
 import type { ScreenProps } from '../Shell';
+
+const MODE_LABELS: Record<string, string> = {
+  fullscreen: 'plein écran',
+  standalone: 'application',
+  'minimal-ui': 'application (barre minimale)',
+  browser: 'navigateur',
+};
+
+/** Version et mode d'affichage, pour diagnostiquer un souci sur le téléphone. */
+function DisplayInfo() {
+  const mode = displayMode();
+  return (
+    <p class="diagnostics muted">
+      Version du {__BUILD_ID__} · affichage : {MODE_LABELS[mode] ?? mode}
+    </p>
+  );
+}
 
 interface Props extends ScreenProps {
   onLogout: () => void;
@@ -30,6 +48,7 @@ export function Settings({ state, send, notify, onLogout }: Props) {
       >
         Se déconnecter
       </button>
+      <DisplayInfo />
     </div>
   );
 }

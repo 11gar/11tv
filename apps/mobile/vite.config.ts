@@ -16,7 +16,11 @@ export default defineConfig({
         lang: 'fr',
         start_url: '/',
         scope: '/',
-        display: 'standalone',
+        // Plein écran : ni barre d'état ni barre de navigation, le fond d'écran va jusqu'aux
+        // bords (un glissement depuis le bord les fait réapparaître). Les zones de l'encoche
+        // sont gérées par env(safe-area-inset-*) avec viewport-fit=cover.
+        display: 'fullscreen',
+        display_override: ['fullscreen', 'standalone'],
         orientation: 'portrait',
         background_color: '#1d222c',
         theme_color: '#1d222c',
@@ -35,6 +39,9 @@ export default defineConfig({
       workbox: {
         // L'interface est mise en cache ; l'API et le WebSocket passent toujours par le réseau.
         navigateFallback: '/index.html',
+        // Une nouvelle version prend la main tout de suite ; main.tsx recharge alors la page.
+        skipWaiting: true,
+        clientsClaim: true,
         navigateFallbackDenylist: [/^\/api\//, /^\/ws/],
         globPatterns: ['**/*.{js,css,html,svg,png,ico}'],
       },
@@ -49,4 +56,9 @@ export default defineConfig({
     },
   },
   build: { target: 'es2022' },
+  define: {
+    __BUILD_ID__: JSON.stringify(
+      new Date().toLocaleString('fr-FR', { dateStyle: 'short', timeStyle: 'short' }),
+    ),
+  },
 });
