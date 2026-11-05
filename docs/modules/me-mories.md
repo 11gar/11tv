@@ -4,45 +4,85 @@ Carte affichée à gauche de l'écran d'accueil : les Todos ouverts et datés de
 Me'Mories (« Aujourd'hui », retards compris, puis « À venir »), dans le style de
 l'application. Liste actualisée toutes les 30 minutes.
 
-La TV lit vos Todos avec **son propre compte**, en lecture seule : elle ne voit ni vos
-Memories, ni votre profil, et ne peut rien modifier.
+La TV se connecte **avec votre compte Me'Mories**. Le module ne fait que lire vos Todos et
+vos tags ; il n'écrit jamais rien.
 
-## 1. Firebase : le compte de la TV
+Tout se règle dans un fichier de la Surface, `%LOCALAPPDATA%\11TV\modules\me-mories.json`,
+jamais dans le dépôt.
 
-Dans la [console Firebase](https://console.firebase.google.com), projet de Me'Mories :
+## 1. La clé d'API et l'identifiant du projet
 
-1. **Authentication → Sign-in method** : vérifiez que **E-mail/Mot de passe** est activé.
-2. **Authentication → Users → Ajouter un utilisateur** : une adresse dédiée (elle n'a pas à
-   exister, par exemple `tv@me-mories.invalid`) et un mot de passe long et aléatoire.
-3. Notez deux **UID** dans cette liste : celui du compte TV, et celui de **votre** compte
-   Me'Mories.
+[Console Firebase](https://console.firebase.google.com), projet de Me'Mories : roue dentée →
+**Paramètres du projet** → **Général** → **Vos applications** → l'application web →
+**Configuration du SDK** → **Config**. Relevez `apiKey` et `projectId`.
 
-## 2. Firestore : autoriser la lecture
+Ce sont aussi `VITE_FIREBASE_API_KEY` et `VITE_FIREBASE_PROJECT_ID` du fichier
+`.env.local` de Me'Mories.
 
-1. **Déployez les règles** de Me'Mories, qui acceptent les lecteurs autorisés
-   (`firestore.rules`, fonction `isReader`). Depuis le dossier de Me'Mories :
-   ```bash
-   npx firebase deploy --only firestore:rules
+## 2. Comment la TV se connecte
+
+### Vous vous connectez à Me'Mories par e-mail et mot de passe
+
+Utilisez les mêmes dans le fichier (étape 3) : `email` et `password`.
+
+### Vous vous connectez avec Google
+
+La TV ne peut pas ouvrir la fenêtre de connexion Google. Elle reprend à la place le **jeton
+de renouvellement** d'une session Me'Mories déjà ouverte :
+
+1. Ouvrez Me'Mories dans Edge ou Chrome, connecté à votre compte.
+2. Ouvrez les outils de développement (**F12**), onglet **Console**.
+3. Collez ceci puis validez (Edge peut demander de taper d'abord `allow pasting`) :
+   ```js
+   const db = await new Promise((ok) => {
+     const r = indexedDB.open('firebaseLocalStorageDb');
+     r.onsuccess = () => ok(r.result);
+   });
+   const rows = await new Promise((ok) => {
+     const r = db.transaction('firebaseLocalStorage').objectStore('firebaseLocalStorage').getAll();
+     r.onsuccess = () => ok(r.result);
+   });
+   copy(rows.find((row) => row.value?.stsTokenManager)?.value.stsTokenManager.refreshToken);
    ```
-2. **Firestore Database → Données** : dans `users` → _votre UID_, ajoutez une collection
-   `readers`, avec un document dont l'**identifiant est l'UID du compte TV** (aucun champ
-   nécessaire). Pour retirer l'accès à la TV, supprimez ce document.
+   Le jeton est copié dans le presse-papiers : collez-le comme `refreshToken` à l'étape 3.
 
-## 3. La Surface : le fichier de configuration
+Le jeton reste valable tant que vous ne changez pas votre mot de passe Google et que vous ne
+révoquez pas les sessions. Se déconnecter de Me'Mories dans le navigateur ne l'invalide pas.
+S'il expire, la carte garde sa dernière liste et le journal indique « Jeton Me'Mories
+expiré » : recopiez-en un.
 
-**Paramètres du projet → Général → Vos applications** : relevez la clé d'API (`apiKey`)
-et l'identifiant du projet (`projectId`).
+## 3. Le fichier de configuration
 
-Dans la session de la TV, créez `%LOCALAPPDATA%\11TV\modules\me-mories.json` (le fichier
-n'est jamais dans le dépôt) :
+Dans la session de la TV, dans PowerShell :
+
+```bash
+New-Item -ItemType Directory -Force "$env:LOCALAPPDATA\11TV\modules"
+```
+
+```bash
+notepad "$env:LOCALAPPDATA\11TV\modules\me-mories.json"
+```
+
+Collez l'un des deux contenus, avec vos valeurs, puis enregistrez.
+
+Compte e-mail :
 
 ```json
 {
   "apiKey": "AIza…",
   "projectId": "me-mories-xxxxx",
-  "ownerUid": "UID de votre compte Me'Mories",
-  "email": "tv@me-mories.invalid",
-  "password": "mot de passe du compte TV"
+  "email": "vous@exemple.fr",
+  "password": "votre mot de passe Me'Mories"
+}
+```
+
+Compte Google :
+
+```json
+{
+  "apiKey": "AIza…",
+  "projectId": "me-mories-xxxxx",
+  "refreshToken": "AMf-vB…"
 }
 ```
 
@@ -53,15 +93,27 @@ Options :
 | `refreshMinutes` | Intervalle d'actualisation (30 par défaut, 5 au minimum)                                                            |
 | `referer`        | Si la clé d'API est restreinte à des sites (Google Cloud → Identifiants) : l'adresse de Me'Mories, ex. `https://…/` |
 
-Redémarrez ensuite 11TV (ou la Surface). Le journal (`%LOCALAPPDATA%\11TV\logs\11tv.log`)
-indique « Module de carte activé », ou la raison d'un refus.
+Le fichier est dans votre profil Windows, lisible par le seul compte de la TV. Il donne
+accès à votre compte Me'Mories : ne le copiez pas ailleurs.
 
-## En cas de problème
+## 4. Redémarrer 11TV
 
-| Sur la carte ou dans le journal          | Cause probable                                                  |
-| ---------------------------------------- | --------------------------------------------------------------- |
-| Pas de carte, « Configuration invalide » | Clé manquante ou mal écrite dans `me-mories.json`               |
-| « Identifiants Me'Mories refusés »       | E-mail ou mot de passe du compte TV                             |
-| « Clé d'API Firebase refusée »           | `apiKey`, ou clé restreinte à des sites : renseignez `referer`  |
-| « Accès refusé par Firestore »           | Règles non déployées, ou document `readers/<UID TV>` absent     |
-| « Me'Mories injoignable : liste de … »   | Pas d'Internet : la carte garde la dernière liste et réessaiera |
+Redémarrez la Surface, ou arrêtez le serveur (le lanceur le relance aussitôt) :
+
+```bash
+Get-CimInstance Win32_Process -Filter "Name='node.exe'" | Where-Object { $_.CommandLine -like '*apps\server\dist\index.js*' } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force }
+```
+
+La carte apparaît quelques secondes plus tard. Sinon :
+
+```bash
+Select-String -Path "$env:LOCALAPPDATA\11TV\logs\11tv.log" -Pattern "carte|Firebase|Firestore|Me.Mories" | Select-Object -Last 5
+```
+
+| Dans le journal ou sur la carte        | Cause probable                                                  |
+| -------------------------------------- | --------------------------------------------------------------- |
+| « Configuration du module invalide »   | Clé manquante, virgule ou guillemet mal placé dans le fichier   |
+| « Identifiants Me'Mories refusés »     | E-mail ou mot de passe                                          |
+| « Jeton Me'Mories expiré ou révoqué »  | Compte Google : recopiez un jeton (étape 2)                     |
+| « Clé d'API Firebase refusée »         | `apiKey`, ou clé restreinte à des sites : renseignez `referer`  |
+| « Me'Mories injoignable : liste de … » | Pas d'Internet : la carte garde la dernière liste et réessaiera |

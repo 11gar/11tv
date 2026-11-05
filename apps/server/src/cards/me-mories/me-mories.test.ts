@@ -7,7 +7,6 @@ import { describeRecurrence, toTodosData } from './todos';
 const config = meMoriesConfigSchema.parse({
   apiKey: 'cle-test',
   projectId: 'me-mories-test',
-  ownerUid: 'Owner123',
   email: 'tv@example.com',
   password: 'secret',
 });
@@ -86,7 +85,9 @@ describe('FirebaseReader', () => {
   it('se connecte une fois puis réutilise le jeton', async () => {
     const fetchMock = vi.fn((url: string) => {
       if (url.includes('signInWithPassword')) {
-        return Promise.resolve(json({ idToken: 'jeton', refreshToken: 'r', expiresIn: '3600' }));
+        return Promise.resolve(
+          json({ idToken: 'jeton', refreshToken: 'r', expiresIn: '3600', localId: 'Owner123' }),
+        );
       }
       return Promise.resolve(
         json([
@@ -135,9 +136,39 @@ describe('FirebaseReader', () => {
     const denied = new FirebaseReader(config, ((url: string) =>
       Promise.resolve(
         url.includes('signIn')
-          ? json({ idToken: 'j', refreshToken: 'r', expiresIn: '3600' })
+          ? json({ idToken: 'j', refreshToken: 'r', expiresIn: '3600', localId: 'u' })
           : json({ error: { status: 'PERMISSION_DENIED' } }, 403),
       )) as unknown as typeof fetch);
     await expect(denied.query('todos')).rejects.toThrow('Accès refusé par Firestore');
+  });
+
+  it('se connecte avec un jeton de renouvellement (compte Google)', async () => {
+    const google = meMoriesConfigSchema.parse({
+      apiKey: 'cle-test',
+      projectId: 'me-mories-test',
+      refreshToken: 'jeton-de-renouvellement-copie',
+    });
+    const fetchMock = vi.fn((url: string) =>
+      Promise.resolve(
+        url.includes('securetoken')
+          ? json({ id_token: 'j', refresh_token: 'r2', expires_in: '3600', user_id: 'Moi42' })
+          : json([]),
+      ),
+    );
+    await new FirebaseReader(google, fetchMock as unknown as typeof fetch).query('todos');
+    const urls = fetchMock.mock.calls.map(([url]) => url);
+    expect(urls[0]).toContain('securetoken.googleapis.com');
+    expect(urls[1]).toContain('/documents/users/Moi42:runQuery');
+
+    const expired = new FirebaseReader(google, () =>
+      Promise.resolve(json({ error: { message: 'TOKEN_EXPIRED' } }, 400)),
+    );
+    await expect(expired.query('todos')).rejects.toThrow('Jeton Me’Mories expiré');
+  });
+
+  it('exige un mot de passe ou un jeton', () => {
+    expect(
+      meMoriesConfigSchema.safeParse({ apiKey: 'k', projectId: 'p', email: 'a@b.fr' }).success,
+    ).toBe(false);
   });
 });

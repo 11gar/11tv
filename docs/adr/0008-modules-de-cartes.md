@@ -29,13 +29,13 @@ style : rien de tout cela ne doit se mélanger au reste de 11TV, ni d'un outil �
 
 ## Me'Mories
 
-- **Compte dédié à la TV en lecture seule**, plutôt qu'un compte de service : un compte de
-  service a tous les droits sur le projet, et sa clé sur la Surface serait un risque
-  disproportionné. Le compte TV ne lit que les Todos et les tags d'un seul utilisateur.
-  Son mot de passe, stocké dans le fichier de configuration du module, ne donne accès qu'à
-  cette lecture.
-- **Autorisation explicite** dans Firestore : `users/{uid}/readers/{uidTV}`, collection que
-  seule la console Firebase peut écrire.
+- **La TV se connecte avec le compte du propriétaire** : par e-mail et mot de passe, ou,
+  pour un compte Google, avec un jeton de renouvellement copié depuis une session
+  Me'Mories. Les règles Firestore restent inchangées. Un compte dédié en lecture seule,
+  autorisé par une règle `readers`, a été envisagé puis écarté pour sa mise en place.
+  Contrepartie : le fichier de configuration donne accès à tout le compte. Il reste dans le
+  profil du compte Windows de la TV, et le module ne fait que lire.
+- **Pas de compte de service** : il aurait tous les droits sur le projet entier.
 - **API REST** (Identity Toolkit, Firestore) plutôt que le SDK Firebase : deux requêtes
   simples, aucune dépendance, et le jeton reste en mémoire.
 - **Actualisation toutes les 30 minutes** (réglable). La TV calcule elle-même « aujourd'hui

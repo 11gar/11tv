@@ -11,14 +11,19 @@ interface Token {
   idToken: string;
   refreshToken: string;
   expiresAt: number;
+  /** UID du compte connecté : ses Todos sont sous users/{uid}. */
+  uid: string;
 }
 
 /** Message lisible pour les erreurs connues de Firebase Authentication. */
 function authMessage(code: string): string {
   if (/INVALID_LOGIN_CREDENTIALS|INVALID_PASSWORD|EMAIL_NOT_FOUND/.test(code)) {
-    return 'Identifiants Me’Mories refusés (e-mail ou mot de passe du compte TV)';
+    return 'Identifiants Me’Mories refusés (e-mail ou mot de passe)';
   }
-  if (code.includes('USER_DISABLED')) return 'Compte TV désactivé dans Firebase';
+  if (/TOKEN_EXPIRED|INVALID_REFRESH_TOKEN|USER_NOT_FOUND/.test(code)) {
+    return 'Jeton Me’Mories expiré ou révoqué : copiez-en un nouveau';
+  }
+  if (code.includes('USER_DISABLED')) return 'Compte Me’Mories désactivé dans Firebase';
   if (/api[ _]key|referer/i.test(code)) {
     return 'Clé d’API Firebase refusée (clé ou restriction de site)';
   }
@@ -27,12 +32,13 @@ function authMessage(code: string): string {
 }
 
 /**
- * Accès en lecture à Firestore par l'API REST, avec le compte de la TV : pas de SDK, pas
- * de compte de service. Le jeton est gardé en mémoire et renouvelé avant expiration.
+ * Accès en lecture à Firestore par l'API REST, connecté avec le compte Me'Mories : pas de
+ * SDK, et ce module n'écrit jamais. Le jeton est gardé en mémoire et renouvelé avant
+ * expiration.
  */
 export class FirebaseReader {
   private token: Token | null = null;
-  private pendingToken: Promise<string> | null = null;
+  private pendingToken: Promise<Token> | null = null;
 
   constructor(
     private readonly config: MeMoriesConfig,
@@ -65,54 +71,57 @@ export class FirebaseReader {
     // signInWithPassword et securetoken nomment les champs différemment.
     const idToken = (json.idToken ?? json.id_token) as string;
     const refreshToken = (json.refreshToken ?? json.refresh_token) as string;
+    const uid = (json.localId ?? json.user_id) as string;
     const expiresIn = Number(json.expiresIn ?? json.expires_in ?? 3600);
-    return { idToken, refreshToken, expiresAt: Date.now() + expiresIn * 1000 };
+    return { idToken, refreshToken, uid, expiresAt: Date.now() + expiresIn * 1000 };
+  }
+
+  private refresh(refreshToken: string): Promise<Token> {
+    const key = encodeURIComponent(this.config.apiKey);
+    return this.authRequest(`https://securetoken.googleapis.com/v1/token?key=${key}`, {
+      grant_type: 'refresh_token',
+      refresh_token: refreshToken,
+    });
   }
 
   /** Une seule connexion à la fois, même si plusieurs requêtes partent ensemble. */
-  private idToken(): Promise<string> {
+  private session(): Promise<Token> {
     this.pendingToken ??= this.obtainToken().finally(() => {
       this.pendingToken = null;
     });
     return this.pendingToken;
   }
 
-  private async obtainToken(): Promise<string> {
+  /**
+   * Jeton valide : celui en mémoire, sinon renouvelé, sinon une nouvelle connexion par mot
+   * de passe. Pour un compte Google, le jeton de la configuration sert de point de départ.
+   */
+  private async obtainToken(): Promise<Token> {
     const { apiKey, email, password } = this.config;
-    const key = encodeURIComponent(apiKey);
-    if (this.token && Date.now() < this.token.expiresAt - TOKEN_MARGIN_MS) {
-      return this.token.idToken;
-    }
-    if (this.token) {
+    if (this.token && Date.now() < this.token.expiresAt - TOKEN_MARGIN_MS) return this.token;
+
+    const refreshToken = this.token?.refreshToken ?? this.config.refreshToken;
+    if (refreshToken) {
       try {
-        this.token = await this.authRequest(
-          `https://securetoken.googleapis.com/v1/token?key=${key}`,
-          {
-            grant_type: 'refresh_token',
-            refresh_token: this.token.refreshToken,
-          },
-        );
-        return this.token.idToken;
-      } catch {
-        this.token = null; // Jeton révoqué : nouvelle connexion ci-dessous.
+        this.token = await this.refresh(refreshToken);
+        return this.token;
+      } catch (err) {
+        this.token = null;
+        // Sans mot de passe, pas d'autre moyen de se reconnecter.
+        if (email === undefined || password === undefined) throw err;
       }
     }
     this.token = await this.authRequest(
-      `https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${key}`,
+      `https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${encodeURIComponent(apiKey)}`,
       { email, password, returnSecureToken: true },
     );
-    return this.token.idToken;
-  }
-
-  private documentsUrl(): string {
-    const { projectId, ownerUid } = this.config;
-    return `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents/users/${ownerUid}`;
+    return this.token;
   }
 
   private async firestoreError(res: Response): Promise<Error> {
     if (res.status === 403) {
       this.token = null;
-      return new Error('Accès refusé par Firestore : règles de lecture du compte TV à vérifier');
+      return new Error('Accès refusé par Firestore');
     }
     const text = await res.text().catch(() => '');
     return new Error(`Firestore : HTTP ${String(res.status)} ${text.slice(0, 200)}`);
@@ -137,11 +146,9 @@ export class FirebaseReader {
           }
         : {}),
     };
-    const res = await this.post(
-      `${this.documentsUrl()}:runQuery`,
-      { structuredQuery },
-      await this.idToken(),
-    );
+    const { idToken, uid } = await this.session();
+    const url = `https://firestore.googleapis.com/v1/projects/${this.config.projectId}/databases/(default)/documents/users/${uid}:runQuery`;
+    const res = await this.post(url, { structuredQuery }, idToken);
     if (!res.ok) throw await this.firestoreError(res);
     const rows = (await res.json()) as { document?: FirestoreDocument }[];
     return rows.flatMap((row) => (row.document ? [decodeDocument(row.document)] : []));
