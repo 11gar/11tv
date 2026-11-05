@@ -42,9 +42,11 @@ de renouvellement** d'une session Me'Mories déjà ouverte :
      const r = db.transaction('firebaseLocalStorage').objectStore('firebaseLocalStorage').getAll();
      r.onsuccess = () => ok(r.result);
    });
-   copy(rows.find((row) => row.value?.stsTokenManager)?.value.stsTokenManager.refreshToken);
+   rows.find((row) => row.value?.stsTokenManager)?.value.stsTokenManager.refreshToken;
    ```
-   Le jeton est copié dans le presse-papiers : collez-le comme `refreshToken` à l'étape 3.
+   La console affiche le jeton, une longue chaîne entre guillemets (souvent `AMf-…`) :
+   clic droit → **Copier la chaîne**, puis collez-le comme `refreshToken` à l'étape 3. Un
+   résultat `undefined` signifie que la page n'est pas connectée à Me'Mories.
 
 Le jeton reste valable tant que vous ne changez pas votre mot de passe Google et que vous ne
 révoquez pas les sessions. Se déconnecter de Me'Mories dans le navigateur ne l'invalide pas.
