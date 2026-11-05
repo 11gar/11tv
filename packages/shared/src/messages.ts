@@ -1,6 +1,7 @@
 // Types seulement : les schémas zod qui les valident vivent dans ./schemas, importé par le
 // serveur uniquement, pour ne pas embarquer zod dans les interfaces web.
 import type { TvCard } from './cards';
+import type { ModuleInfo } from './modules';
 import type { MusicAction, MusicState } from './music';
 import type { PostIt, PostItColor } from './postits';
 import type { RemoteKey, VolumeAction, MouseButton } from './remote';
@@ -30,6 +31,7 @@ export type ClientMessage =
   | { type: 'remove-postit'; id: string }
   | { type: 'clear-postits' }
   // Réglages
+  | { type: 'set-module-enabled'; id: string; enabled: boolean }
   | { type: 'set-slide-interval'; seconds: number }
   | { type: 'delete-wallpaper'; id: string }
   | { type: 'reorder-wallpapers'; order: string[] };
@@ -62,8 +64,10 @@ export interface AppState {
   /** Faux si le pilote souris et volume de Windows n'est pas disponible. */
   pointerAvailable: boolean;
   music: MusicState;
-  /** Post-it collés sur la TV, du plus ancien au plus récent. */
+  /** Post-it collés sur la TV, du plus ancien au plus récent (vide si le module est éteint). */
   postIts: PostIt[];
+  /** Modules (Me'Mories, post-it…) et leur état, pour Réglages → Modules. */
+  modules: ModuleInfo[];
 }
 
 export interface PairingInfo {

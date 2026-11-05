@@ -151,6 +151,11 @@ function setup() {
         remove: () => Promise.resolve(),
         clear: () => Promise.resolve(),
       },
+      modules: {
+        list: () => [],
+        isActive: () => true,
+        setEnabled: () => Promise.resolve(),
+      },
     },
     pino({ level: 'silent' }),
   );

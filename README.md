@@ -220,7 +220,8 @@ si on veut), puis « Coller sur la TV » : il s'envole du téléphone et se plaq
 l'accueil. Six au plus (en coller un septième décolle le plus ancien), gardés après un
 redémarrage ; un appui sur l'un d'eux, dans le panneau, le décolle.
 
-**Réglages** : ajout d'images (JPEG, PNG ou WebP ; elles sont réduites à 3840 px, converties
+**Réglages** : modules à allumer ou éteindre (Me'Mories, post-it…), ajout d'images (JPEG,
+PNG ou WebP ; elles sont réduites à 3840 px, converties
 en WebP et débarrassées de leurs métadonnées, position GPS comprise), ordre, suppression,
 délai de défilement, PIN permanent, sans redemander l'actuel (les autres téléphones sont
 déconnectés), mise à jour de 11TV.

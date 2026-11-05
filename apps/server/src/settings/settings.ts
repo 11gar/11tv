@@ -13,6 +13,11 @@ export const settingsSchema = z.object({
   slideIntervalSec: z.number().int().min(SLIDE_INTERVAL_MIN_SEC).max(SLIDE_INTERVAL_MAX_SEC),
   /** Ordre choisi des fonds d'écran (noms de fichiers) ; les fichiers absents sont ignorés. */
   wallpaperOrder: z.array(z.string()),
+  /**
+   * Modules éteints depuis le téléphone. On retient ceux qui sont éteints plutôt qu'allumés :
+   * un module ajouté plus tard démarre allumé.
+   */
+  disabledModules: z.array(z.string()).default([]),
   auth: z
     .object({
       pinHash: z.string(),
@@ -29,6 +34,7 @@ export function defaultSettings(): Settings {
     version: 1,
     slideIntervalSec: SLIDE_INTERVAL_DEFAULT_SEC,
     wallpaperOrder: [],
+    disabledModules: [],
     auth: null,
   };
 }

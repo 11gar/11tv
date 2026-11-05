@@ -9,6 +9,8 @@ import { buildLanApp } from './http/lan-app';
 import { Updater } from './update/updater';
 import { loadCardModules } from './cards/registry';
 import { PostItBoard } from './postits/board';
+import { ModuleManager } from './modules/module-manager';
+import { POSTITS_MODULE_ID } from '@11tv/shared';
 import { buildSetupApp } from './http/setup-app';
 import { buildTvApp } from './http/tv-app';
 import { StateHub } from './hub/state-hub';
@@ -98,12 +100,42 @@ async function main(): Promise<void> {
     artwork,
     log.child({ module: 'musique' }),
   );
-  // Outils externes (Me'Mories…) : un module par outil, actif s'il est configuré.
+  // Modules, allumés ou éteints depuis le téléphone : les post-it, et un module par outil
+  // externe (Me'Mories…), qui ne fonctionne que s'il est configuré.
   const cardModules = await loadCardModules(config.paths.modules, log);
   const postIts = await PostItBoard.load(config.paths.postIts, log);
   postIts.on('change', () => {
     hub.broadcast();
   });
+  const modules = new ModuleManager(
+    [
+      {
+        id: POSTITS_MODULE_ID,
+        name: 'Post-it',
+        description: 'Petits mots collés depuis le téléphone, à droite de l’accueil',
+        configured: true,
+        problem: null,
+        start: () => undefined,
+        stop: () => undefined,
+      },
+      ...cardModules.map(({ entry, module, problem }) => ({
+        id: entry.id,
+        name: entry.name,
+        description: entry.description,
+        configured: module !== null,
+        problem,
+        start: () => module?.start(),
+        stop: () => module?.stop(),
+      })),
+    ],
+    {
+      disabledModules: () => settings.get().disabledModules,
+      setDisabledModules: async (ids) => {
+        await settings.update((s) => ({ ...s, disabledModules: ids }));
+      },
+    },
+    log,
+  );
   const hub = new StateHub(
     {
       browser,
@@ -123,13 +155,18 @@ async function main(): Promise<void> {
         reorder: (order) => wallpaperManager.reorder(order),
       },
       pairing: () => connection.pairing(auth.pairingPin, tls.caFingerprint),
-      cards: () => cardModules.flatMap((module) => module.card() ?? []),
+      // Un module éteint n'envoie plus sa carte, même s'il en garde une en mémoire.
+      cards: () =>
+        cardModules.flatMap(({ entry, module }) =>
+          module && modules.isActive(entry.id) ? (module.card() ?? []) : [],
+        ),
       postIts,
+      modules,
     },
     log.child({ module: 'hub' }),
   );
-  for (const module of cardModules) {
-    module.on('change', () => {
+  for (const { module } of cardModules) {
+    module?.on('change', () => {
       hub.broadcast();
     });
   }
@@ -169,7 +206,7 @@ async function main(): Promise<void> {
   await setupApp.listen({ host: '0.0.0.0', port: config.ports.setup });
   browser.start();
   music.start();
-  for (const module of cardModules) module.start();
+  modules.startActive();
 
   // --- Changement d'adresse IP (pas d'IP fixe) ----------------------------------------
   const addressWatch = setInterval(() => {
@@ -198,7 +235,7 @@ async function main(): Promise<void> {
     clearInterval(addressWatch);
     clearInterval(logRotation);
     music.stop();
-    for (const module of cardModules) module.stop();
+    modules.stopAll();
     wallpapers.close();
     await browser.stop();
     await Promise.allSettled([tvApp.close(), lanApp.close(), setupApp.close()]);

@@ -52,20 +52,27 @@ describe('PollingCardModule', () => {
 });
 
 describe('loadCardModules', () => {
-  it('n’active que les modules configurés, et ignore une configuration invalide', async () => {
+  it('crée les modules configurés et explique pourquoi les autres ne démarrent pas', async () => {
     const dir = mkdtempSync(path.join(os.tmpdir(), '11tv-modules-'));
     mkdirSync(dir, { recursive: true });
     writeFileSync(path.join(dir, 'valide.json'), '﻿{"ok":true}');
     writeFileSync(path.join(dir, 'invalide.json'), '{pas du json');
 
     const create = vi.fn(() => polling(() => Promise.resolve(data)) as CardModule);
-    const modules = await loadCardModules(dir, log, {
-      valide: create,
-      invalide: create,
-      absent: create,
-    });
+    const entry = (id: string) => ({ id, name: id, description: '', create });
+    const loaded = await loadCardModules(dir, log, [
+      entry('valide'),
+      entry('invalide'),
+      entry('absent'),
+    ]);
 
-    expect(modules).toHaveLength(1);
     expect(create).toHaveBeenCalledWith({ ok: true }, log);
+    expect(loaded.map((l) => [l.entry.id, l.module !== null])).toEqual([
+      ['valide', true],
+      ['invalide', false],
+      ['absent', false],
+    ]);
+    expect(loaded[1]?.problem).toMatch(/^Configuration invalide/);
+    expect(loaded[2]?.problem).toBe('À configurer sur la Surface : modules\\absent.json');
   });
 });

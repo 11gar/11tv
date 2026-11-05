@@ -940,3 +940,83 @@ button {
   font-size: 0.7rem;
   opacity: 0.5;
 }
+
+/* --- Réglages → Modules --------------------------------------------------------------- */
+
+.module-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+}
+
+.module-row {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 0;
+}
+
+.module-row + .module-row {
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.module-row__text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.module-row__name {
+  font-weight: 600;
+}
+
+.module-row__description,
+.module-row__problem {
+  font-size: 0.8rem;
+}
+
+.module-row__problem {
+  color: #ffc46b;
+  overflow-wrap: anywhere;
+}
+
+/* Interrupteur : glisse à droite et s'allume quand le module est actif. */
+.switch {
+  position: relative;
+  flex-shrink: 0;
+  width: 52px;
+  height: 30px;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.18);
+  transition: background 180ms ease;
+}
+
+.switch[aria-checked='true'] {
+  background: #34c759;
+}
+
+.switch:disabled {
+  opacity: 0.4;
+}
+
+.switch__thumb {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  transition: transform 180ms cubic-bezier(0.34, 1.4, 0.64, 1);
+}
+
+.switch[aria-checked='true'] .switch__thumb {
+  transform: translateX(22px);
+}

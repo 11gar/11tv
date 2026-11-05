@@ -1,5 +1,6 @@
 import {
   getService,
+  POSTITS_MODULE_ID,
   type AppState,
   type ClientMessage,
   type ServiceId,
@@ -116,6 +117,8 @@ export function Shell({ onSessionLost }: Props) {
 
   const screen: ScreenProps = { state, send, notify };
   const pointerAvailable = state?.pointerAvailable ?? true;
+  // Le bouton post-it disparaît quand le module est éteint (Réglages → Modules).
+  const postItsOn = state?.modules.find((m) => m.id === POSTITS_MODULE_ID)?.enabled ?? true;
   const notice =
     status !== 'open'
       ? 'Hors ligne'
@@ -130,22 +133,24 @@ export function Shell({ onSessionLost }: Props) {
       </div>
 
       <main class="home">
-        <button
-          type="button"
-          class="postit-fab"
-          aria-label="Coller un post-it sur la TV"
-          onClick={() => {
-            haptic();
-            setPanel('postits');
-          }}
-        >
-          <span class="postit-fab__note" aria-hidden="true">
-            +
-          </span>
-          {(state?.postIts.length ?? 0) > 0 && (
-            <span class="postit-fab__count">{state?.postIts.length}</span>
-          )}
-        </button>
+        {postItsOn && (
+          <button
+            type="button"
+            class="postit-fab"
+            aria-label="Coller un post-it sur la TV"
+            onClick={() => {
+              haptic();
+              setPanel('postits');
+            }}
+          >
+            <span class="postit-fab__note" aria-hidden="true">
+              +
+            </span>
+            {(state?.postIts.length ?? 0) > 0 && (
+              <span class="postit-fab__count">{state?.postIts.length}</span>
+            )}
+          </button>
+        )}
         <button
           type="button"
           class="clock-button"

@@ -1,6 +1,7 @@
 import {
   getService,
   musicTrackUrl,
+  POSTITS_MODULE_ID,
   serviceForUrl,
   type AppState,
   type BrowserStatus,
@@ -17,6 +18,7 @@ import { UserFacingError } from '../errors';
 import type { RemoteControl } from '../input/remote-control';
 import type { Logger } from '../log';
 import type { MusicService } from '../music/music-service';
+import type { ModuleManager } from '../modules/module-manager';
 import type { PostItBoard } from '../postits/board';
 
 export type ClientRole = 'tv' | 'remote';
@@ -43,6 +45,8 @@ export type HubMusic = Pick<MusicService, 'state' | 'control' | 'pause' | 'playi
 
 export type HubPostIts = Pick<PostItBoard, 'list' | 'add' | 'remove' | 'clear'>;
 
+export type HubModules = Pick<ModuleManager, 'list' | 'setEnabled' | 'isActive'>;
+
 export interface HubDeps {
   browser: BrowserController;
   music: HubMusic;
@@ -53,6 +57,7 @@ export interface HubDeps {
   settings: HubSettings;
   wallpapers: HubWallpapers;
   postIts: HubPostIts;
+  modules: HubModules;
   homeUrl: string;
   pairing: () => PairingInfo | null;
   /** Cartes des modules externes, réservées à la TV. */
@@ -163,6 +168,9 @@ export class StateHub {
         return this.openMusic(musicTrackUrl(message.videoId, message.playlistId), true);
 
       case 'add-postit':
+        if (!this.deps.modules.isActive(POSTITS_MODULE_ID)) {
+          throw new UserFacingError('Les post-it sont éteints (Réglages → Modules)');
+        }
         this.log.info({ color: message.color }, 'Post-it collé');
         await this.deps.postIts.add(message.text, message.color);
         return;
@@ -171,6 +179,8 @@ export class StateHub {
       case 'clear-postits':
         return this.deps.postIts.clear();
 
+      case 'set-module-enabled':
+        return this.deps.modules.setEnabled(message.id, message.enabled);
       case 'set-slide-interval':
         return settings.setSlideInterval(message.seconds);
       case 'delete-wallpaper':
@@ -203,7 +213,9 @@ export class StateHub {
       wallpapers: this.deps.wallpapers.list(),
       pointerAvailable: this.deps.remote.pointerAvailable,
       music: this.deps.music.state(),
-      postIts: this.deps.postIts.list(),
+      // Éteints, les post-it restent dans postits.json mais ne s'affichent plus.
+      postIts: this.deps.modules.isActive(POSTITS_MODULE_ID) ? this.deps.postIts.list() : [],
+      modules: this.deps.modules.list(),
     };
   }
 

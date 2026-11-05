@@ -20,6 +20,11 @@ style : rien de tout cela ne doit se mélanger au reste de 11TV, ni d'un outil �
 - **Activé par sa configuration** : `%LOCALAPPDATA%\11TV\modules\<module>.json`, validée
   par le schéma du module. Fichier absent : module inactif. Fichier invalide : erreur dans
   le journal, le reste démarre normalement. Les identifiants ne sont jamais dans le dépôt.
+- **Allumé ou éteint depuis le téléphone** (Réglages → Modules), post-it compris : le
+  `ModuleManager` retient les modules **éteints** dans `settings.json`, si bien qu'un module
+  ajouté plus tard démarre allumé. Éteint, un module s'arrête (plus de requêtes réseau) et
+  n'affiche plus rien ; ses données sont gardées. Un module pas encore configuré apparaît
+  quand même, avec ce qu'il attend.
 - **Pannes contenues** : une actualisation qui échoue garde les dernières données, avec une
   mention discrète sur la carte. Rien chargé encore : pas de carte du tout.
 - **Données personnelles réservées à la TV** : les cartes passent dans `TvState`, jamais

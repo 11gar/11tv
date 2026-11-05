@@ -1,5 +1,6 @@
 import { logout } from '../api';
 import { displayMode } from '../display-mode';
+import { ModuleSettings } from '../components/ModuleSettings';
 import { PinSettings } from '../components/PinSettings';
 import { SlideIntervalSettings } from '../components/SlideIntervalSettings';
 import { UpdateSettings } from '../components/UpdateSettings';
@@ -30,6 +31,7 @@ interface Props extends ScreenProps {
 export function Settings({ state, send, notify, onLogout }: Props) {
   return (
     <div class="stack">
+      <ModuleSettings modules={state?.modules ?? []} send={send} />
       <WallpaperSettings wallpapers={state?.wallpapers ?? []} send={send} notify={notify} />
       {state && (
         <SlideIntervalSettings

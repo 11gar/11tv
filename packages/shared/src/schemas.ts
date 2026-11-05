@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { PIN_PATTERN, SLIDE_INTERVAL_MAX_SEC, SLIDE_INTERVAL_MIN_SEC } from './constants';
 import type { ChangePinRequest, ClientMessage, LoginRequest } from './messages';
 import { MUSIC_ACTIONS, PLAYLIST_ID_PATTERN, VIDEO_ID_PATTERN } from './music';
+import { MODULE_ID_PATTERN } from './modules';
 import { POSTIT_COLORS, POSTIT_TEXT_MAX } from './postits';
 import {
   MOUSE_BUTTONS,
@@ -47,6 +48,11 @@ export const clientMessageSchema = z.discriminatedUnion('type', [
   }),
   z.object({ type: z.literal('remove-postit'), id: z.string().min(1).max(64) }),
   z.object({ type: z.literal('clear-postits') }),
+  z.object({
+    type: z.literal('set-module-enabled'),
+    id: z.string().regex(MODULE_ID_PATTERN),
+    enabled: z.boolean(),
+  }),
   z.object({
     type: z.literal('set-slide-interval'),
     seconds: z.number().int().min(SLIDE_INTERVAL_MIN_SEC).max(SLIDE_INTERVAL_MAX_SEC),
