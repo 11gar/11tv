@@ -195,7 +195,10 @@ export async function buildLanApp({
     },
   );
 
-  /** Les balises <img> n'envoient pas d'en-tête Origin : seul le cookie (SameSite) compte. */
+  /**
+   * Lectures sans effet (images, état) : les balises <img> et les GET du même site n'envoient
+   * pas d'en-tête Origin, seul le cookie (SameSite=Strict) compte.
+   */
   async function requireSessionForImages(req: FastifyRequest, reply: FastifyReply) {
     if (!auth.authenticate(req.cookies[SESSION_COOKIE])) return reply.code(401).send();
   }
@@ -204,7 +207,9 @@ export async function buildLanApp({
 
   // --- Mise à jour de 11TV ------------------------------------------------------------
 
-  app.get('/api/update', { preValidation: requireSession }, () => updater.state);
+  // Lecture seule : un GET du même site n'envoie pas d'en-tête Origin, le cookie suffit
+  // (comme pour les images). Le lancement, lui, vérifie l'origine.
+  app.get('/api/update', { preValidation: requireSessionForImages }, () => updater.state);
 
   app.post('/api/update', { preValidation: requireSession }, (req, reply) => {
     if (!updater.start()) return reply.code(409).send(updater.state);

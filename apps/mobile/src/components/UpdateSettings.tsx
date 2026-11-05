@@ -52,7 +52,10 @@ export function UpdateSettings() {
   useEffect(() => {
     fetchUpdateStatus()
       .then(setView)
-      .catch(() => undefined);
+      .catch(() => {
+        // Sans cela, le bouton resterait grisé sans explication.
+        setView({ state: 'unavailable', message: 'État de la mise à jour illisible.' });
+      });
   }, []);
 
   // Suivi pendant la mise à jour, puis pendant le redémarrage du serveur.
