@@ -1,5 +1,6 @@
 // Types seulement : les schémas zod qui les valident vivent dans ./schemas, importé par le
 // serveur uniquement, pour ne pas embarquer zod dans les interfaces web.
+import type { TvCard } from './cards';
 import type { MusicAction, MusicState } from './music';
 import type { RemoteKey, VolumeAction, MouseButton } from './remote';
 import type { ServiceId } from './services';
@@ -70,6 +71,8 @@ export interface PairingInfo {
 /** Vue réservée à l'écran TV (servi en local uniquement). */
 export interface TvState extends AppState {
   pairing: PairingInfo | null;
+  /** Cartes des modules externes : données personnelles, jamais envoyées au téléphone. */
+  cards: TvCard[];
 }
 
 export type ServerMessage<S extends AppState = AppState> =

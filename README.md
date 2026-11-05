@@ -258,6 +258,7 @@ Données (jamais dans le dépôt), dans `%LOCALAPPDATA%\11TV\` :
 | `wallpapers/`        | Fonds d'écran                                   |
 | `thumbs/`            | Vignettes des fonds d'écran (régénérables)      |
 | `edge-profile/`      | Profil Edge du kiosque (cookies des services)   |
+| `modules/`           | Configuration et accès des modules de cartes    |
 | `logs/11tv.log`      | Journaux JSON                                   |
 
 ## Sécurité
@@ -284,3 +285,5 @@ Données (jamais dans le dépôt), dans `%LOCALAPPDATA%\11TV\` :
   - [x] Retour à l'accueil sans couper la musique (lecture dans une fenêtre réduite).
   - [x] Barre « En cours de lecture » sur la TV : pochette, titre, artiste.
 - [x] **Phase 4** : démarrage automatique, redémarrage nocturne, robustesse.
+- [x] **Cartes** : modules isolés pour les outils externes ([ADR 0008](docs/adr/0008-modules-de-cartes.md)).
+  - [x] Me'Mories : Todos à venir, à gauche de l'accueil ([installation](docs/modules/me-mories.md)).

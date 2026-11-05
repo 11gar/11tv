@@ -1,0 +1,221 @@
+/*
+ * Carte Me'Mories : reprise des jetons de l'application (src/styles/_tokens.scss, palette
+ * sombre) et des styles de TodoSection / TodoItem / TagChip. Tout est préfixé « mm- » et
+ * dimensionné en em : la taille de police de la carte, en vw, met l'ensemble à l'échelle
+ * de la TV.
+ */
+.mm-card {
+  --mm-surface: #16161d;
+  --mm-surface-2: #1e1e27;
+  --mm-surface-sunken: #101016;
+  --mm-border: #282833;
+  --mm-border-strong: #393947;
+  --mm-text: #eeeef4;
+  --mm-text-muted: #9d9db0;
+  --mm-text-subtle: #6d6d80;
+  --mm-primary: #8b83ff;
+  --mm-danger: #ff6b78;
+  --mm-shadow-3: 0 4px 8px rgb(0 0 0 / 40%), 0 16px 40px rgb(0 0 0 / 55%);
+
+  --mm-space-1: 0.25em;
+  --mm-space-2: 0.5em;
+  --mm-space-3: 0.75em;
+  --mm-space-4: 1em;
+  --mm-radius-xs: 4px;
+  --mm-radius-lg: 1em;
+  --mm-radius-full: 999px;
+
+  display: flex;
+  flex-direction: column;
+  gap: var(--mm-space-4);
+  max-height: 100%;
+  padding: var(--mm-space-4) var(--mm-space-4) var(--mm-space-3);
+  overflow: hidden;
+  font-family:
+    system-ui,
+    -apple-system,
+    'Segoe UI',
+    Roboto,
+    sans-serif;
+  /* 0.9375rem (text-base) sur un écran de 1 280 px, mis à l'échelle de la TV. */
+  font-size: 1vw;
+  line-height: 1.4;
+  color: var(--mm-text);
+  color-scheme: dark;
+  background: var(--mm-surface);
+  border: 1px solid var(--mm-border);
+  border-radius: var(--mm-radius-lg);
+  box-shadow: var(--mm-shadow-3);
+  animation: fade-in 800ms ease both;
+}
+
+.mm-card p,
+.mm-card h2,
+.mm-card ul {
+  margin: 0;
+  padding: 0;
+}
+
+.mm-card__header {
+  display: flex;
+  gap: var(--mm-space-2);
+  align-items: center;
+  font-size: 0.8em;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--mm-text-muted);
+}
+
+.mm-card__logo {
+  width: 1.3em;
+  height: 1.3em;
+  color: var(--mm-primary);
+}
+
+/* --- Sections (TodoSection) ---------------------------------------------------------- */
+
+.mm-section {
+  display: flex;
+  flex-shrink: 0; /* Trop de contenu : coupé en bas de carte, jamais superposé. */
+  flex-direction: column;
+  gap: var(--mm-space-2);
+}
+
+.mm-section__title {
+  display: flex;
+  gap: var(--mm-space-2);
+  align-items: center;
+  font-size: 1.067em; /* text-md */
+  font-weight: 600;
+  color: var(--mm-text);
+}
+
+.mm-count {
+  padding: 0 var(--mm-space-2);
+  font-size: 0.75em;
+  font-variant-numeric: tabular-nums;
+  font-weight: 500;
+  line-height: 1.6em;
+  color: var(--mm-text-muted);
+  background: var(--mm-surface-sunken);
+  border-radius: var(--mm-radius-full);
+}
+
+.mm-list {
+  list-style: none;
+}
+
+/* --- Lignes (TodoItem) --------------------------------------------------------------- */
+
+.mm-item {
+  display: flex;
+  gap: var(--mm-space-3);
+  align-items: flex-start;
+  padding: var(--mm-space-2) var(--mm-space-1);
+}
+
+.mm-item + .mm-item {
+  border-top: 1px solid var(--mm-border);
+}
+
+.mm-box {
+  flex-shrink: 0;
+  width: 1.33em;
+  height: 1.33em;
+  margin-top: 0.1em;
+  background: var(--mm-surface);
+  border: 1.5px solid var(--mm-border-strong);
+  border-radius: var(--mm-radius-xs);
+}
+
+.mm-body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: var(--mm-space-1);
+  min-width: 0;
+}
+
+.mm-title {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  color: var(--mm-text);
+}
+
+.mm-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--mm-space-1) var(--mm-space-3);
+  align-items: center;
+  font-size: 0.8em; /* text-xs */
+  color: var(--mm-text-muted);
+}
+
+.mm-due {
+  font-variant-numeric: tabular-nums;
+}
+
+.mm-overdue {
+  font-weight: 600;
+  color: var(--mm-danger);
+}
+
+.mm-subtle {
+  display: inline-flex;
+  gap: var(--mm-space-1);
+  align-items: center;
+  color: var(--mm-text-subtle);
+}
+
+.mm-icon {
+  flex-shrink: 0;
+  width: 1em;
+  height: 1em;
+}
+
+/* --- Tags (TagChip, taille sm) ------------------------------------------------------- */
+
+.mm-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--mm-space-1);
+  margin-top: var(--mm-space-1);
+}
+
+.mm-chip {
+  display: inline-flex;
+  gap: var(--mm-space-1);
+  align-items: center;
+  max-width: 100%;
+  height: 1.6em;
+  padding: 0 var(--mm-space-3);
+  font-size: 0.8em;
+  font-weight: 500;
+  line-height: 1;
+  color: color-mix(in srgb, var(--chip-color) 82%, var(--mm-text));
+  background: color-mix(in srgb, var(--chip-color) 14%, var(--mm-surface));
+  border: 1px solid color-mix(in srgb, var(--chip-color) 28%, transparent);
+  border-radius: var(--mm-radius-full);
+}
+
+.mm-chip__label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* --- Pied de carte ------------------------------------------------------------------- */
+
+.mm-empty,
+.mm-more,
+.mm-stale {
+  font-size: 0.8em;
+  color: var(--mm-text-muted);
+}
+
+.mm-stale {
+  color: var(--mm-text-subtle);
+}

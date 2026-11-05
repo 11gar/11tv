@@ -7,6 +7,7 @@ import {
   type ClientMessage,
   type PairingInfo,
   type ServerMessage,
+  type TvCard,
   type TvState,
   type View,
   type Wallpaper,
@@ -50,6 +51,8 @@ export interface HubDeps {
   wallpapers: HubWallpapers;
   homeUrl: string;
   pairing: () => PairingInfo | null;
+  /** Cartes des modules externes, réservées à la TV. */
+  cards: () => TvCard[];
 }
 
 /** Ce qu'affiche l'onglet principal, d'après son URL. */
@@ -193,7 +196,10 @@ export class StateHub {
   private sendState(client: HubClient): void {
     const state = this.appState();
     if (client.role === 'tv') {
-      client.send({ type: 'state', state: { ...state, pairing: this.deps.pairing() } });
+      client.send({
+        type: 'state',
+        state: { ...state, pairing: this.deps.pairing(), cards: this.deps.cards() },
+      });
     } else {
       client.send({ type: 'state', state });
     }

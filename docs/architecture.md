@@ -86,3 +86,4 @@ Les choix structurants sont détaillés dans [adr/](adr/) :
 5. [Entrées clavier et souris](adr/0005-entrees-clavier-souris.md)
 6. [YouTube Music (phase 3)](adr/0006-youtube-music.md)
 7. [Démarrage automatique et robustesse (phase 4)](adr/0007-demarrage-automatique.md)
+8. [Modules de cartes pour les outils externes](adr/0008-modules-de-cartes.md)

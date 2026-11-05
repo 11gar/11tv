@@ -35,6 +35,8 @@ export interface AppConfig {
     /** Racine du dépôt (scripts, interfaces construites). */
     repo: string;
     data: string;
+    /** Configuration des modules de carte (un fichier JSON par module, avec ses accès). */
+    modules: string;
     settings: string;
     sessions: string;
     musicHistory: string;
@@ -84,6 +86,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
     paths: {
       repo: repoRoot,
       data,
+      modules: path.join(data, 'modules'),
       settings: path.join(data, 'settings.json'),
       sessions: path.join(data, 'sessions.json'),
       musicHistory: path.join(data, 'music-history.json'),

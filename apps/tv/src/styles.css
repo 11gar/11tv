@@ -77,6 +77,31 @@ body {
 
 /* --- En cours de lecture ------------------------------------------------- */
 
+/* Emplacements des cartes des modules externes (apps/tv/src/cards). */
+.card-slot {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  gap: 1.2vw;
+  transition: transform 3s ease;
+}
+
+.card-slot--left,
+.card-slot--right {
+  top: 9vh;
+  bottom: 9vh;
+  width: 23vw;
+  justify-content: center;
+}
+
+.card-slot--left {
+  left: 3.5vw;
+}
+
+.card-slot--right {
+  right: 3.5vw;
+}
+
 .now-playing {
   position: absolute;
   left: 50%;

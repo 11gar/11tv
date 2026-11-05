@@ -144,6 +144,7 @@ function setup() {
         },
       },
       pairing: () => pairing,
+      cards: () => [],
     },
     pino({ level: 'silent' }),
   );

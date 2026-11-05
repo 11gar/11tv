@@ -7,6 +7,7 @@ import { loadConfig, loadDotEnv } from './config';
 import { ConnectionInfo } from './connection-info';
 import { buildLanApp } from './http/lan-app';
 import { Updater } from './update/updater';
+import { loadCardModules } from './cards/registry';
 import { buildSetupApp } from './http/setup-app';
 import { buildTvApp } from './http/tv-app';
 import { StateHub } from './hub/state-hub';
@@ -96,6 +97,8 @@ async function main(): Promise<void> {
     artwork,
     log.child({ module: 'musique' }),
   );
+  // Outils externes (Me'Mories…) : un module par outil, actif s'il est configuré.
+  const cardModules = await loadCardModules(config.paths.modules, log);
   const hub = new StateHub(
     {
       browser,
@@ -115,9 +118,15 @@ async function main(): Promise<void> {
         reorder: (order) => wallpaperManager.reorder(order),
       },
       pairing: () => connection.pairing(auth.pairingPin, tls.caFingerprint),
+      cards: () => cardModules.flatMap((module) => module.card() ?? []),
     },
     log.child({ module: 'hub' }),
   );
+  for (const module of cardModules) {
+    module.on('change', () => {
+      hub.broadcast();
+    });
+  }
   settings.on('change', () => {
     hub.broadcast();
   });
@@ -154,6 +163,7 @@ async function main(): Promise<void> {
   await setupApp.listen({ host: '0.0.0.0', port: config.ports.setup });
   browser.start();
   music.start();
+  for (const module of cardModules) module.start();
 
   // --- Changement d'adresse IP (pas d'IP fixe) ----------------------------------------
   const addressWatch = setInterval(() => {
@@ -182,6 +192,7 @@ async function main(): Promise<void> {
     clearInterval(addressWatch);
     clearInterval(logRotation);
     music.stop();
+    for (const module of cardModules) module.stop();
     wallpapers.close();
     await browser.stop();
     await Promise.allSettled([tvApp.close(), lanApp.close(), setupApp.close()]);
