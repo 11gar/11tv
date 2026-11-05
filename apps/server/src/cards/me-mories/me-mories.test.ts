@@ -54,21 +54,25 @@ describe('decodeDocument', () => {
 });
 
 describe('toTodosData', () => {
-  it('garde les todos ouverts et datés, triés par échéance, avec leurs tags', () => {
+  it('garde les todos ouverts jusqu’à demain et ceux sans date, avec leurs tags', () => {
     const data = toTodosData(
       [
-        todo({ id: 'b', dueDate: '2026-11-08', tagIds: ['t1', 'supprime'] }),
-        todo({ id: 'a', dueDate: '2026-11-02', recurrence: { unit: 'day', interval: 2 } }),
+        todo({ id: 'sans-date', dueDate: null }),
+        todo({ id: 'demain', dueDate: '2026-11-06' }),
+        todo({ id: 'plus-tard', dueDate: '2026-11-08' }),
+        todo({ id: 'jour', dueDate: '2026-11-05', tagIds: ['t1', 'supprime'] }),
+        todo({ id: 'retard', dueDate: '2026-11-02', recurrence: { unit: 'day', interval: 2 } }),
         todo({ id: 'fait', status: 'done' }),
         todo({ id: 'corbeille', deletedAt: '2026-11-03T00:00:00Z' }),
-        todo({ id: 'sans-date', dueDate: null }),
         { id: 'casse' },
       ],
       [{ id: 't1', title: 'Maison', color: '#12855a' }],
+      new Date(2026, 10, 5, 20, 0),
     );
-    expect(data.todos.map((t) => t.id)).toEqual(['a', 'b']);
+    expect(data.todos.map((t) => t.id)).toEqual(['retard', 'jour', 'demain', 'sans-date']);
     expect(data.todos[0]?.recurrence).toBe('tous les 2 jours');
     expect(data.todos[1]?.tags).toEqual([{ title: 'Maison', color: '#12855a' }]);
+    expect(data.todos[3]?.dueDate).toBeNull();
   });
 
   it('reprend la formulation des récurrences de Me’Mories', () => {

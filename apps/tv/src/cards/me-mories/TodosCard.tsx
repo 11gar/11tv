@@ -50,16 +50,18 @@ function useToday(): string {
 }
 
 function TodoRow({ todo, today }: { todo: MeMoriesTodo; today: string }) {
-  const overdue = overdueDays(todo.dueDate, today) > 0;
+  const overdue = todo.dueDate !== null && overdueDays(todo.dueDate, today) > 0;
   return (
     <li class="mm-item">
       <span class="mm-box" aria-hidden="true" />
       <div class="mm-body">
         <span class="mm-title">{todo.title}</span>
         <p class="mm-meta">
-          <span class={overdue ? 'mm-due mm-overdue' : 'mm-due'}>
-            {dueLabel(todo.dueDate, today)}
-          </span>
+          {todo.dueDate !== null && (
+            <span class={overdue ? 'mm-due mm-overdue' : 'mm-due'}>
+              {dueLabel(todo.dueDate, today)}
+            </span>
+          )}
           {todo.recurrence && (
             <span class="mm-subtle">
               <Icon name="repeat" />
@@ -102,7 +104,7 @@ export function TodosCard({ card }: { card: MeMoriesTodosCard }) {
       </header>
 
       {sections.length === 0 ? (
-        <p class="mm-empty">Rien de prévu. Profitez-en !</p>
+        <p class="mm-empty">Rien à faire aujourd’hui. Profitez-en !</p>
       ) : (
         sections.map((section) => (
           <div key={section.id} class="mm-section">

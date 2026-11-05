@@ -29,8 +29,8 @@ export interface MeMoriesTag {
 export interface MeMoriesTodo {
   id: string;
   title: string;
-  /** Jour d'échéance « AAAA-MM-JJ » (jour civil, pas un instant). */
-  dueDate: string;
+  /** Jour d'échéance « AAAA-MM-JJ » (jour civil, pas un instant) ; null : sans date. */
+  dueDate: string | null;
   /** « toutes les semaines », « tous les 2 jours »… ; null hors série. */
   recurrence: string | null;
   postponeCount: number;
@@ -38,7 +38,10 @@ export interface MeMoriesTodo {
 }
 
 export interface MeMoriesTodosData {
-  /** Todos ouverts et datés, du plus urgent au plus lointain. */
+  /**
+   * Todos ouverts : datés jusqu'à demain (retards compris, demain pour passer minuit entre
+   * deux actualisations), du plus ancien au plus récent, puis les todos sans date.
+   */
   todos: MeMoriesTodo[];
 }
 

@@ -48,15 +48,27 @@ export function describeRecurrence(rule: { unit: keyof typeof UNIT_LABELS; inter
   return `${article} ${String(rule.interval)} ${labels.plural}`;
 }
 
+/** Jour civil local « AAAA-MM-JJ » (la Surface et la TV partagent le même fuseau). */
+function localIsoDate(date: Date): string {
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${String(date.getFullYear())}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+}
+
 /**
- * Todos à afficher : ouverts, non supprimés et datés, triés comme dans Me'Mories
- * (échéance la plus proche d'abord, puis ordre de création). Le découpage « aujourd'hui /
- * à venir » est fait par la TV, qui connaît la date du jour même entre deux actualisations.
+ * Todos à afficher : ouverts et non supprimés, échus aujourd'hui ou en retard, plus ceux
+ * sans date. Ceux de demain sont aussi envoyés : la TV, qui connaît l'heure, les montre
+ * dès minuit sans attendre l'actualisation suivante. Tri comme dans Me'Mories : échéance
+ * la plus ancienne d'abord, sans date à la fin, puis ordre de création.
  */
 export function toTodosData(
   rawTodos: readonly Record<string, unknown>[],
   rawTags: readonly Record<string, unknown>[],
+  now: Date = new Date(),
 ): MeMoriesTodosData {
+  const tomorrow = new Date(now);
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  const until = localIsoDate(tomorrow);
+
   const tags = new Map<string, MeMoriesTag>();
   for (const raw of rawTags) {
     const tag = tagSchema.safeParse(raw);
@@ -68,16 +80,25 @@ export function toTodosData(
       const parsed = todoSchema.safeParse(raw);
       return parsed.success ? [parsed.data] : [];
     })
-    .filter((todo) => todo.status === 'todo' && todo.deletedAt === null && todo.dueDate !== null)
-    .sort(
-      (a, b) =>
-        (a.dueDate ?? '').localeCompare(b.dueDate ?? '') || a.createdAt.localeCompare(b.createdAt),
+    .filter(
+      (todo) =>
+        todo.status === 'todo' &&
+        todo.deletedAt === null &&
+        (todo.dueDate === null || todo.dueDate <= until),
     )
+    .sort((a, b) => {
+      if (a.dueDate !== b.dueDate) {
+        if (a.dueDate === null) return 1;
+        if (b.dueDate === null) return -1;
+        return a.dueDate.localeCompare(b.dueDate);
+      }
+      return a.createdAt.localeCompare(b.createdAt);
+    })
     .slice(0, MAX_TODOS)
     .map((todo): MeMoriesTodo => ({
       id: todo.id,
       title: todo.title,
-      dueDate: todo.dueDate ?? '',
+      dueDate: todo.dueDate,
       recurrence: todo.recurrence ? describeRecurrence(todo.recurrence) : null,
       postponeCount: todo.postponeCount,
       // Un tag supprimé (ou pas encore lu) disparaît, comme dans Me'Mories.

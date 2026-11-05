@@ -154,6 +154,11 @@
   color: var(--mm-text-muted);
 }
 
+/* Sans date ni récurrence : pas de ligne vide (comme dans Me'Mories). */
+.mm-meta:empty {
+  display: none;
+}
+
 .mm-due {
   font-variant-numeric: tabular-nums;
 }

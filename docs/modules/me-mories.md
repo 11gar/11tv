@@ -1,8 +1,9 @@
-# Module Me'Mories : Todos à venir
+# Module Me'Mories : Todos du jour
 
-Carte affichée à gauche de l'écran d'accueil : les Todos ouverts et datés de votre compte
-Me'Mories (« Aujourd'hui », retards compris, puis « À venir »), dans le style de
-l'application. Liste actualisée toutes les 30 minutes.
+Carte affichée à gauche de l'écran d'accueil : les Todos ouverts de votre compte Me'Mories,
+« Aujourd'hui » (retards compris) puis « Sans date », dans le style de l'application. Les
+Todos à venir n'y figurent pas. Liste actualisée toutes les 30 minutes ; ceux de demain
+apparaissent dès minuit.
 
 La TV se connecte **avec votre compte Me'Mories**. Le module ne fait que lire vos Todos et
 vos tags ; il n'écrit jamais rien.

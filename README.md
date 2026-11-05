@@ -286,4 +286,4 @@ Données (jamais dans le dépôt), dans `%LOCALAPPDATA%\11TV\` :
   - [x] Barre « En cours de lecture » sur la TV : pochette, titre, artiste.
 - [x] **Phase 4** : démarrage automatique, redémarrage nocturne, robustesse.
 - [x] **Cartes** : modules isolés pour les outils externes ([ADR 0008](docs/adr/0008-modules-de-cartes.md)).
-  - [x] Me'Mories : Todos à venir, à gauche de l'accueil ([installation](docs/modules/me-mories.md)).
+  - [x] Me'Mories : Todos du jour et sans date, à gauche de l'accueil ([installation](docs/modules/me-mories.md)).
