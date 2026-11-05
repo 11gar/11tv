@@ -12,6 +12,7 @@ import { Clock } from './components/Clock';
 import { GearIcon, KeyboardIcon, VolumeDownIcon, VolumeUpIcon } from './components/icons';
 import { KeyboardPanel } from './components/KeyboardPanel';
 import { NowPlayingPill } from './components/NowPlayingPill';
+import { PostItComposer } from './components/PostItComposer';
 import { RepeatButton } from './components/RepeatButton';
 import { ServiceIcon } from './components/ServiceIcon';
 import { Sheet } from './components/Sheet';
@@ -29,12 +30,13 @@ const SERVICE_ORDER: readonly ServiceId[] = [
   'disney-plus',
 ];
 
-type Panel = 'settings' | 'keyboard' | 'music';
+type Panel = 'settings' | 'keyboard' | 'music' | 'postits';
 
 const PANEL_TITLES: Record<Panel, string> = {
   settings: 'Réglages',
   keyboard: 'Clavier',
   music: 'Musique',
+  postits: 'Post-it',
 };
 
 /** Ce que reçoivent les panneaux : l'état et un envoi qui prévient si la Surface est injoignable. */
@@ -130,6 +132,22 @@ export function Shell({ onSessionLost }: Props) {
       <main class="home">
         <button
           type="button"
+          class="postit-fab"
+          aria-label="Coller un post-it sur la TV"
+          onClick={() => {
+            haptic();
+            setPanel('postits');
+          }}
+        >
+          <span class="postit-fab__note" aria-hidden="true">
+            +
+          </span>
+          {(state?.postIts.length ?? 0) > 0 && (
+            <span class="postit-fab__count">{state?.postIts.length}</span>
+          )}
+        </button>
+        <button
+          type="button"
           class="clock-button"
           aria-label="Ramener la TV à l’accueil"
           onClick={() => {
@@ -218,6 +236,7 @@ export function Shell({ onSessionLost }: Props) {
           {panel === 'settings' && <Settings {...screen} onLogout={onSessionLost} />}
           {panel === 'keyboard' && <KeyboardPanel send={send} />}
           {panel === 'music' && <Music {...screen} />}
+          {panel === 'postits' && <PostItComposer {...screen} />}
         </Sheet>
       )}
 

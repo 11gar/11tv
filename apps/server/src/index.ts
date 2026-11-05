@@ -8,6 +8,7 @@ import { ConnectionInfo } from './connection-info';
 import { buildLanApp } from './http/lan-app';
 import { Updater } from './update/updater';
 import { loadCardModules } from './cards/registry';
+import { PostItBoard } from './postits/board';
 import { buildSetupApp } from './http/setup-app';
 import { buildTvApp } from './http/tv-app';
 import { StateHub } from './hub/state-hub';
@@ -99,6 +100,10 @@ async function main(): Promise<void> {
   );
   // Outils externes (Me'Mories…) : un module par outil, actif s'il est configuré.
   const cardModules = await loadCardModules(config.paths.modules, log);
+  const postIts = await PostItBoard.load(config.paths.postIts, log);
+  postIts.on('change', () => {
+    hub.broadcast();
+  });
   const hub = new StateHub(
     {
       browser,
@@ -119,6 +124,7 @@ async function main(): Promise<void> {
       },
       pairing: () => connection.pairing(auth.pairingPin, tls.caFingerprint),
       cards: () => cardModules.flatMap((module) => module.card() ?? []),
+      postIts,
     },
     log.child({ module: 'hub' }),
   );

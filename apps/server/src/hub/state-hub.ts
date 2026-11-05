@@ -17,6 +17,7 @@ import { UserFacingError } from '../errors';
 import type { RemoteControl } from '../input/remote-control';
 import type { Logger } from '../log';
 import type { MusicService } from '../music/music-service';
+import type { PostItBoard } from '../postits/board';
 
 export type ClientRole = 'tv' | 'remote';
 
@@ -40,6 +41,8 @@ export interface HubWallpapers {
 
 export type HubMusic = Pick<MusicService, 'state' | 'control' | 'pause' | 'playing'>;
 
+export type HubPostIts = Pick<PostItBoard, 'list' | 'add' | 'remove' | 'clear'>;
+
 export interface HubDeps {
   browser: BrowserController;
   music: HubMusic;
@@ -49,6 +52,7 @@ export interface HubDeps {
   >;
   settings: HubSettings;
   wallpapers: HubWallpapers;
+  postIts: HubPostIts;
   homeUrl: string;
   pairing: () => PairingInfo | null;
   /** Cartes des modules externes, réservées à la TV. */
@@ -158,6 +162,15 @@ export class StateHub {
         this.log.info({ videoId: message.videoId }, 'Lecture d’un titre');
         return this.openMusic(musicTrackUrl(message.videoId, message.playlistId), true);
 
+      case 'add-postit':
+        this.log.info({ color: message.color }, 'Post-it collé');
+        await this.deps.postIts.add(message.text, message.color);
+        return;
+      case 'remove-postit':
+        return this.deps.postIts.remove(message.id);
+      case 'clear-postits':
+        return this.deps.postIts.clear();
+
       case 'set-slide-interval':
         return settings.setSlideInterval(message.seconds);
       case 'delete-wallpaper':
@@ -190,6 +203,7 @@ export class StateHub {
       wallpapers: this.deps.wallpapers.list(),
       pointerAvailable: this.deps.remote.pointerAvailable,
       music: this.deps.music.state(),
+      postIts: this.deps.postIts.list(),
     };
   }
 

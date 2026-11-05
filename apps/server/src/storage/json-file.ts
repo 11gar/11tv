@@ -21,6 +21,8 @@ export class JsonFile<T> {
     let raw: string;
     try {
       raw = await readFile(this.file, 'utf8');
+      // Un fichier retouché à la main sous Windows commence parfois par un BOM.
+      if (raw.charCodeAt(0) === 0xfeff) raw = raw.slice(1);
     } catch (err) {
       if ((err as NodeJS.ErrnoException).code === 'ENOENT') return this.defaults();
       throw err;

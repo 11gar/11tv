@@ -2,6 +2,7 @@
 // serveur uniquement, pour ne pas embarquer zod dans les interfaces web.
 import type { TvCard } from './cards';
 import type { MusicAction, MusicState } from './music';
+import type { PostIt, PostItColor } from './postits';
 import type { RemoteKey, VolumeAction, MouseButton } from './remote';
 import type { ServiceId } from './services';
 
@@ -24,6 +25,10 @@ export type ClientMessage =
   // Musique
   | { type: 'music'; action: MusicAction }
   | { type: 'play-track'; videoId: string; playlistId: string | null }
+  // Post-it
+  | { type: 'add-postit'; text: string; color: PostItColor }
+  | { type: 'remove-postit'; id: string }
+  | { type: 'clear-postits' }
   // Réglages
   | { type: 'set-slide-interval'; seconds: number }
   | { type: 'delete-wallpaper'; id: string }
@@ -57,6 +62,8 @@ export interface AppState {
   /** Faux si le pilote souris et volume de Windows n'est pas disponible. */
   pointerAvailable: boolean;
   music: MusicState;
+  /** Post-it collés sur la TV, du plus ancien au plus récent. */
+  postIts: PostIt[];
 }
 
 export interface PairingInfo {

@@ -198,6 +198,7 @@ Le téléphone tient sur une seule page, sur les mêmes fonds d'écran que la TV
 | Élément             | Usage                                                                                           |
 | ------------------- | ----------------------------------------------------------------------------------------------- |
 | Horloge             | Un appui ramène la TV à l'écran d'accueil                                                       |
+| Post-it (en haut)   | Écrire un mot et le coller sur l'accueil de la TV ; décoller ceux qui y sont                    |
 | Icônes des services | Lancent YouTube, YouTube Music, Disney+ ou Prime Video sur la TV                                |
 | Trackpad            | Glisser : curseur · toucher : clic · deux doigts : défiler · toucher à deux doigts : clic droit |
 | Volume + et −       | Volume de Windows (maintenir pour répéter) ; celui de la TV reste sur sa télécommande           |
@@ -213,6 +214,11 @@ session de l'utilisateur, pas comme service.
 couper la lecture, et l'écran d'accueil affiche alors le titre en cours (pochette, titre,
 artiste). Sur le téléphone, la pastille du bas ouvre le lecteur complet (précédent, lecture/pause,
 suivant) et les titres écoutés récemment sur la TV, à relancer d'un appui. Lancer YouTube, Disney+ ou Prime Video met la musique en pause.
+
+**Post-it** : on écrit directement sur le papier, on choisit sa couleur (et un autocollant
+si on veut), puis « Coller sur la TV » : il s'envole du téléphone et se plaque à droite de
+l'accueil. Six au plus (en coller un septième décolle le plus ancien), gardés après un
+redémarrage ; un appui sur l'un d'eux, dans le panneau, le décolle.
 
 **Réglages** : ajout d'images (JPEG, PNG ou WebP ; elles sont réduites à 3840 px, converties
 en WebP et débarrassées de leurs métadonnées, position GPS comprise), ordre, suppression,
@@ -254,6 +260,7 @@ Données (jamais dans le dépôt), dans `%LOCALAPPDATA%\11TV\` :
 | `settings.json`      | Réglages et empreinte du PIN                    |
 | `sessions.json`      | Empreintes des jetons de session des téléphones |
 | `music-history.json` | Titres écoutés récemment sur la TV              |
+| `postits.json`       | Post-it collés sur la TV                        |
 | `certs/`             | Autorité locale et certificat du serveur        |
 | `wallpapers/`        | Fonds d'écran                                   |
 | `thumbs/`            | Vignettes des fonds d'écran (régénérables)      |

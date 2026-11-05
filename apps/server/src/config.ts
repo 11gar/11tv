@@ -40,6 +40,7 @@ export interface AppConfig {
     settings: string;
     sessions: string;
     musicHistory: string;
+    postIts: string;
     wallpapers: string;
     thumbs: string;
     certs: string;
@@ -90,6 +91,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
       settings: path.join(data, 'settings.json'),
       sessions: path.join(data, 'sessions.json'),
       musicHistory: path.join(data, 'music-history.json'),
+      postIts: path.join(data, 'postits.json'),
       wallpapers: path.join(data, 'wallpapers'),
       thumbs: path.join(data, 'thumbs'),
       certs: path.join(data, 'certs'),

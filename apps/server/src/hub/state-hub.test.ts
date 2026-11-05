@@ -145,6 +145,12 @@ function setup() {
       },
       pairing: () => pairing,
       cards: () => [],
+      postIts: {
+        list: () => [],
+        add: (text, color) => Promise.resolve({ id: 'p', text, color, createdAt: 0 }),
+        remove: () => Promise.resolve(),
+        clear: () => Promise.resolve(),
+      },
     },
     pino({ level: 'silent' }),
   );

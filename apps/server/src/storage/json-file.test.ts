@@ -23,6 +23,12 @@ describe('JsonFile', () => {
     expect(await store.load()).toEqual({ count: 0 });
   });
 
+  it('accepte un fichier retouché sous Windows (BOM en tête)', async () => {
+    await writeFile(file, '﻿{"count":7}', 'utf8');
+    const store = new JsonFile(file, schema, () => ({ count: 0 }), log);
+    expect(await store.load()).toEqual({ count: 7 });
+  });
+
   it('relit ce qui a été sauvegardé', async () => {
     const store = new JsonFile(file, schema, () => ({ count: 0 }), log);
     await store.save({ count: 3 });

@@ -4,6 +4,7 @@ import { CardSlot } from './cards/CardSlot';
 import { Clock } from './components/Clock';
 import { NowPlayingBar } from './components/NowPlayingBar';
 import { PairingPanel } from './components/PairingPanel';
+import { PostItWall } from './components/PostItWall';
 
 /** Écran d'accueil : on le pilote depuis le téléphone, il n'a donc rien d'interactif. */
 export function App() {
@@ -16,6 +17,7 @@ export function App() {
       <Clock />
       <CardSlot slot="left" cards={state?.cards ?? []} />
       <CardSlot slot="right" cards={state?.cards ?? []} />
+      <PostItWall postIts={state?.postIts ?? []} />
       {state?.pairing && <PairingPanel pairing={state.pairing} />}
       <NowPlayingBar nowPlaying={state?.music.nowPlaying ?? null} />
       {status !== 'open' && <div class="status-badge glass">Connexion au serveur…</div>}
