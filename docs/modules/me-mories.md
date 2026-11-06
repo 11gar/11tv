@@ -5,9 +5,11 @@ Carte affichée à gauche de l'écran d'accueil : les Todos ouverts de votre com
 Todos à venir n'y figurent pas. Liste actualisée toutes les 30 minutes ; ceux de demain
 apparaissent dès minuit.
 
-Six Todos par page : s'il y en a davantage, les pages défilent (« Page 1/3 » en haut de la
-carte). Le temps passé sur chaque page se règle sur le téléphone : Réglages → Modules →
-roue crantée de Me'Mories → « Temps par page » (10 s par défaut).
+Six Todos au plus par page : s'il y en a davantage, les pages défilent (« Page 1/3 » en haut
+de la carte), avec un fondu d'une seconde à la disparition et à l'apparition. Les Todos sont
+répartis au plus juste entre les pages : 7 donnent 4 + 3, pas 6 + 1. Le temps passé sur
+chaque page se règle sur le téléphone : Réglages → Modules → roue crantée de Me'Mories →
+« Temps par page » (10 s par défaut).
 
 La TV se connecte **avec votre compte Me'Mories**. Le module ne fait que lire vos Todos et
 vos tags ; il n'écrit jamais rien.

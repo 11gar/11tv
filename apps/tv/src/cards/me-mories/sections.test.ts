@@ -34,13 +34,24 @@ describe('paginateTodos', () => {
       todo('sans-date-1', null),
       todo('sans-date-2', null),
     ];
+    // 4 lignes, 3 au plus par page : 2 + 2 plutôt que 3 + 1.
     expect(summary(paginateTodos(todos, '2026-11-05', 3))).toEqual([
-      [
-        ['today', ['retard', 'jour'], 2],
-        ['undated', ['sans-date-1'], 2],
-      ],
-      [['undated', ['sans-date-2'], 2]],
+      [['today', ['retard', 'jour'], 2]],
+      [['undated', ['sans-date-1', 'sans-date-2'], 2]],
     ]);
+  });
+
+  it('répartit au plus juste : 7 todos font 4 + 3, 13 font 5 + 4 + 4', () => {
+    const many = (n: number) => Array.from({ length: n }, (_, i) => todo(`t${String(i)}`, null));
+    const sizes = (n: number) =>
+      paginateTodos(many(n), '2026-11-05', 6).map((page) =>
+        page.reduce((sum, section) => sum + section.todos.length, 0),
+      );
+    expect(sizes(6)).toEqual([6]);
+    expect(sizes(7)).toEqual([4, 3]);
+    expect(sizes(12)).toEqual([6, 6]);
+    expect(sizes(13)).toEqual([5, 4, 4]);
+    expect(sizes(1)).toEqual([1]);
   });
 
   it('n’a aucune page quand il n’y a rien à faire', () => {

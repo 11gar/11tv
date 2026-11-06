@@ -38,23 +38,32 @@ const SECTIONS = [
 
 /**
  * Pages de la carte : « Aujourd'hui » (retards compris, comme dans Me'Mories) puis « Sans
- * date », `perPage` lignes par page. Une page reprend l'en-tête de chaque section qu'elle
- * contient, avec le total de la section. Les todos à venir ne sont pas affichés.
+ * date », `maxPerPage` lignes au plus par page. Le nombre de pages est le plus petit
+ * possible, et les lignes y sont réparties au plus juste : 7 todos donnent 4 + 3 plutôt que
+ * 6 + 1. Une page reprend l'en-tête de chaque section qu'elle contient, avec le total de la
+ * section. Les todos à venir ne sont pas affichés.
  */
 export function paginateTodos(
   todos: readonly MeMoriesTodo[],
   today: string,
-  perPage: number,
+  maxPerPage: number,
 ): TodoSectionView[][] {
   const bySection = {
     today: todos.filter((todo) => todo.dueDate !== null && todo.dueDate <= today),
     undated: todos.filter((todo) => todo.dueDate === null),
   };
   const rows = SECTIONS.flatMap(({ id }) => bySection[id].map((todo) => ({ id, todo })));
+  const pageCount = Math.ceil(rows.length / maxPerPage);
+  // Taille de base de chaque page ; le reste ajoute une ligne aux premières (13 → 5, 4, 4).
+  const base = Math.floor(rows.length / Math.max(1, pageCount));
+  const extra = rows.length % Math.max(1, pageCount);
 
   const pages: TodoSectionView[][] = [];
-  for (let start = 0; start < rows.length; start += perPage) {
-    const chunk = rows.slice(start, start + perPage);
+  let start = 0;
+  for (let index = 0; index < pageCount; index++) {
+    const size = base + (index < extra ? 1 : 0);
+    const chunk = rows.slice(start, start + size);
+    start += size;
     pages.push(
       SECTIONS.flatMap(({ id, title }) => {
         const here = chunk.filter((row) => row.id === id).map((row) => row.todo);

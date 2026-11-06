@@ -12,6 +12,9 @@ import './todos-card.css';
 /** Lignes par page : la carte doit tenir en hauteur, même avec des tags partout. */
 const ROWS_PER_PAGE = 6;
 
+/** Durée de chaque moitié du fondu entre deux pages (todos-card.css, .mm-card). */
+const FADE_MS = 1000;
+
 const timeFormat = new Intl.DateTimeFormat('fr-FR', { hour: '2-digit', minute: '2-digit' });
 
 // Icônes de Me'Mories (src/ui/Icon), même tracé.
@@ -102,22 +105,32 @@ export function TodosCard({ card }: { card: MeMoriesTodosCard }) {
   const pages = paginateTodos(card.data.todos, today, ROWS_PER_PAGE);
   const seconds = card.options[ME_MORIES_PAGE_SECONDS] ?? ME_MORIES_PAGE_SECONDS_DEFAULT;
   const [page, setPage] = useState(0);
+  const [fading, setFading] = useState(false);
   // Une liste raccourcie (todo terminé, minuit) peut laisser la page courante hors limites.
   const current = page < pages.length ? page : 0;
   const sections = pages[current] ?? [];
+  const paged = pages.length > 1;
 
+  // Page affichée `seconds` secondes, puis la carte s'efface (1 s), change de page pendant
+  // qu'elle est invisible, et réapparaît (1 s).
   useEffect(() => {
-    if (pages.length < 2) return;
-    const timer = window.setInterval(() => {
-      setPage((p) => (p + 1) % pages.length);
-    }, seconds * 1000);
+    if (!paged) return;
+    const timer = fading
+      ? window.setTimeout(() => {
+          setPage((p) => (p + 1) % pages.length);
+          setFading(false);
+        }, FADE_MS)
+      : window.setTimeout(() => {
+          setFading(true);
+        }, seconds * 1000);
     return () => {
-      window.clearInterval(timer);
+      window.clearTimeout(timer);
     };
-  }, [pages.length, seconds]);
+  }, [paged, pages.length, seconds, fading]);
 
   return (
-    <section class="mm-card">
+    // Jamais invisible sans pages à faire défiler (liste raccourcie pendant un fondu).
+    <section class={paged && fading ? 'mm-card mm-card--fading' : 'mm-card'}>
       <header class="mm-card__header">
         <Icon name="checkSquare" class="mm-card__logo" />
         <span>Todos</span>
@@ -132,7 +145,7 @@ export function TodosCard({ card }: { card: MeMoriesTodosCard }) {
         <p class="mm-empty">Rien à faire aujourd’hui. Profitez-en !</p>
       ) : (
         sections.map((section) => (
-          // Clé par page : chaque nouvelle page apparaît en fondu.
+          // Clé par page : les sections de la nouvelle page sont recréées.
           <div key={`${String(current)}-${section.id}`} class="mm-section">
             <h2 class="mm-section__title">
               {section.title}
