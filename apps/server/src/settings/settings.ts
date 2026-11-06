@@ -18,6 +18,8 @@ export const settingsSchema = z.object({
    * un module ajouté plus tard démarre allumé.
    */
   disabledModules: z.array(z.string()).default([]),
+  /** Options choisies pour chaque module ; une option absente prend sa valeur par défaut. */
+  moduleOptions: z.record(z.string(), z.record(z.string(), z.number())).default({}),
   auth: z
     .object({
       pinHash: z.string(),
@@ -35,6 +37,7 @@ export function defaultSettings(): Settings {
     slideIntervalSec: SLIDE_INTERVAL_DEFAULT_SEC,
     wallpaperOrder: [],
     disabledModules: [],
+    moduleOptions: {},
     auth: null,
   };
 }

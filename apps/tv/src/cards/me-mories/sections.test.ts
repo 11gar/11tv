@@ -1,6 +1,6 @@
 import type { MeMoriesTodo } from '@11tv/shared';
 import { describe, expect, it } from 'vitest';
-import { dueLabel, splitTodos, toIsoDate } from './sections';
+import { dueLabel, paginateTodos, toIsoDate } from './sections';
 
 const todo = (id: string, dueDate: string | null): MeMoriesTodo => ({
   id,
@@ -22,8 +22,11 @@ describe('dueLabel', () => {
   });
 });
 
-describe('splitTodos', () => {
-  it('garde aujourd’hui (retards compris) et les todos sans date, sans ceux à venir', () => {
+describe('paginateTodos', () => {
+  const summary = (pages: ReturnType<typeof paginateTodos>) =>
+    pages.map((page) => page.map((s) => [s.id, s.todos.map((t) => t.id), s.total]));
+
+  it('répartit aujourd’hui puis sans date sur des pages, sans ceux à venir', () => {
     const todos = [
       todo('retard', '2026-11-01'),
       todo('jour', '2026-11-05'),
@@ -31,17 +34,20 @@ describe('splitTodos', () => {
       todo('sans-date-1', null),
       todo('sans-date-2', null),
     ];
-    const { sections, hidden } = splitTodos(todos, '2026-11-05', 3);
-    expect(sections.map((s) => [s.id, s.todos.map((t) => t.id), s.total])).toEqual([
-      ['today', ['retard', 'jour'], 2],
-      ['undated', ['sans-date-1'], 2],
+    expect(summary(paginateTodos(todos, '2026-11-05', 3))).toEqual([
+      [
+        ['today', ['retard', 'jour'], 2],
+        ['undated', ['sans-date-1'], 2],
+      ],
+      [['undated', ['sans-date-2'], 2]],
     ]);
-    expect(hidden).toBe(1);
+  });
+
+  it('n’a aucune page quand il n’y a rien à faire', () => {
+    expect(paginateTodos([todo('demain', '2026-11-06')], '2026-11-05', 6)).toEqual([]);
   });
 
   it('montre demain dès minuit, sans attendre l’actualisation', () => {
-    const todos = [todo('demain', '2026-11-06')];
-    expect(splitTodos(todos, '2026-11-05', 8).sections).toHaveLength(0);
-    expect(splitTodos(todos, '2026-11-06', 8).sections[0]?.todos).toHaveLength(1);
+    expect(paginateTodos([todo('demain', '2026-11-06')], '2026-11-06', 6)).toHaveLength(1);
   });
 });

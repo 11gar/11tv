@@ -124,6 +124,7 @@ async function main(): Promise<void> {
         description: entry.description,
         configured: module !== null,
         problem,
+        options: entry.options,
         start: () => module?.start(),
         stop: () => module?.stop(),
       })),
@@ -132,6 +133,13 @@ async function main(): Promise<void> {
       disabledModules: () => settings.get().disabledModules,
       setDisabledModules: async (ids) => {
         await settings.update((s) => ({ ...s, disabledModules: ids }));
+      },
+      moduleOptions: () => settings.get().moduleOptions,
+      setModuleOptions: async (id, values) => {
+        await settings.update((s) => ({
+          ...s,
+          moduleOptions: { ...s.moduleOptions, [id]: values },
+        }));
       },
     },
     log,
@@ -157,9 +165,10 @@ async function main(): Promise<void> {
       pairing: () => connection.pairing(auth.pairingPin, tls.caFingerprint),
       // Un module éteint n'envoie plus sa carte, même s'il en garde une en mémoire.
       cards: () =>
-        cardModules.flatMap(({ entry, module }) =>
-          module && modules.isActive(entry.id) ? (module.card() ?? []) : [],
-        ),
+        cardModules.flatMap(({ entry, module }) => {
+          const card = module && modules.isActive(entry.id) ? module.card() : null;
+          return card ? [{ ...card, options: modules.optionValues(entry.id) }] : [];
+        }),
       postIts,
       modules,
     },

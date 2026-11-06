@@ -26,15 +26,33 @@ function setup(disabled: string[] = []) {
     current = ids;
     return Promise.resolve();
   });
+  let options: Record<string, Record<string, number>> = {};
+  const setModuleOptions = vi.fn((id: string, values: Record<string, number>) => {
+    options = { ...options, [id]: values };
+    return Promise.resolve();
+  });
   const postIts = fakeModule('post-its');
   const memories = fakeModule('me-mories');
+  memories.module.options = [
+    {
+      key: 'pageSeconds',
+      label: 'Temps par page',
+      choices: [5, 10, 30].map((value) => ({ value, label: `${String(value)} s` })),
+      default: 10,
+    },
+  ];
   const later = fakeModule('plus-tard', false);
   const manager = new ModuleManager(
     [postIts.module, memories.module, later.module],
-    { disabledModules: () => current, setDisabledModules },
+    {
+      disabledModules: () => current,
+      setDisabledModules,
+      moduleOptions: () => options,
+      setModuleOptions,
+    },
     log,
   );
-  return { manager, setDisabledModules, postIts, memories, later };
+  return { manager, setDisabledModules, setModuleOptions, postIts, memories, later };
 }
 
 describe('ModuleManager', () => {
@@ -66,6 +84,21 @@ describe('ModuleManager', () => {
     setDisabledModules.mockClear();
     await manager.setEnabled('me-mories', true); // Déjà allumé : rien à faire.
     expect(setDisabledModules).not.toHaveBeenCalled();
+  });
+
+  it('règle une option parmi les choix proposés, et refuse le reste', async () => {
+    const { manager, setModuleOptions } = setup();
+    expect(manager.optionValues('me-mories')).toEqual({ pageSeconds: 10 });
+    expect(manager.list()[0]?.options).toEqual([]);
+
+    await manager.setOption('me-mories', 'pageSeconds', 30);
+    expect(setModuleOptions).toHaveBeenLastCalledWith('me-mories', { pageSeconds: 30 });
+    expect(manager.list()[1]?.options[0]?.value).toBe(30);
+
+    await expect(manager.setOption('me-mories', 'pageSeconds', 7)).rejects.toThrow(
+      'Valeur non proposée',
+    );
+    await expect(manager.setOption('me-mories', 'inconnue', 5)).rejects.toThrow('Option inconnue');
   });
 
   it('refuse un module inconnu', async () => {

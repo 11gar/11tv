@@ -2,6 +2,8 @@
 // côté serveur (apps/server/src/cards/<module>) et côté TV (apps/tv/src/cards/<module>).
 // Ce fichier n'en partage que la forme des données affichées.
 
+import type { ModuleOptionValues } from './modules';
+
 /** Emplacement d'une carte sur l'écran d'accueil, de part et d'autre de l'horloge. */
 export type CardSlot = 'left' | 'right';
 
@@ -16,6 +18,8 @@ interface CardBase<K extends string, D> {
   updatedAt: number;
   /** Échec de la dernière actualisation, à afficher discrètement. */
   error: string | null;
+  /** Options du module réglées sur le téléphone (Réglages → Modules → roue crantée). */
+  options: ModuleOptionValues;
 }
 
 // --- Me'Mories : Todos à venir ------------------------------------------------------------
@@ -46,6 +50,10 @@ export interface MeMoriesTodosData {
 }
 
 export type MeMoriesTodosCard = CardBase<'me-mories-todos', MeMoriesTodosData>;
+
+/** Option du module Me'Mories : secondes passées sur chaque page de Todos. */
+export const ME_MORIES_PAGE_SECONDS = 'pageSeconds';
+export const ME_MORIES_PAGE_SECONDS_DEFAULT = 10;
 
 // --- Toutes les cartes ---------------------------------------------------------------------
 

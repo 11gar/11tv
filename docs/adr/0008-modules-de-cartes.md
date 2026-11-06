@@ -25,6 +25,10 @@ style : rien de tout cela ne doit se mélanger au reste de 11TV, ni d'un outil �
   ajouté plus tard démarre allumé. Éteint, un module s'arrête (plus de requêtes réseau) et
   n'affiche plus rien ; ses données sont gardées. Un module pas encore configuré apparaît
   quand même, avec ce qu'il attend.
+- **Options par module** (roue crantée à côté de l'interrupteur) : chaque module déclare
+  les siennes dans le catalogue, sous forme de liste de choix avec une valeur par défaut. Le
+  serveur refuse toute valeur hors liste, les garde dans `settings.json` et les passe à la
+  carte (`TvCard.options`). Un module sans option n'a pas de roue crantée.
 - **Pannes contenues** : une actualisation qui échoue garde les dernières données, avec une
   mention discrète sur la carte. Rien chargé encore : pas de carte du tout.
 - **Données personnelles réservées à la TV** : les cartes passent dans `TvState`, jamais

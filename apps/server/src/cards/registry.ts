@@ -1,7 +1,9 @@
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { z } from 'zod';
+import { ME_MORIES_PAGE_SECONDS, ME_MORIES_PAGE_SECONDS_DEFAULT } from '@11tv/shared';
 import type { Logger } from '../log';
+import type { ModuleOptionDef } from '../modules/module-manager';
 import type { CardModule } from './card-module';
 import { createMeMoriesModule, ME_MORIES_MODULE_ID } from './me-mories';
 
@@ -10,6 +12,8 @@ export interface CardModuleEntry {
   /** Nom et description affichés dans Réglages → Modules. */
   name: string;
   description: string;
+  /** Options réglables depuis le téléphone, passées à la carte (TvCard.options). */
+  options?: readonly ModuleOptionDef[];
   create: (config: unknown, log: Logger) => CardModule;
 }
 
@@ -24,6 +28,15 @@ const CATALOG: CardModuleEntry[] = [
     id: ME_MORIES_MODULE_ID,
     name: 'Me’Mories',
     description: 'Todos du jour et sans date, à gauche de l’accueil',
+    options: [
+      {
+        key: ME_MORIES_PAGE_SECONDS,
+        label: 'Temps par page',
+        help: 'Quand les Todos ne tiennent pas sur une carte, les pages défilent.',
+        choices: [5, 10, 15, 20, 30, 45, 60].map((s) => ({ value: s, label: `${String(s)} s` })),
+        default: ME_MORIES_PAGE_SECONDS_DEFAULT,
+      },
+    ],
     create: createMeMoriesModule,
   },
 ];

@@ -155,6 +155,7 @@ function setup() {
         list: () => [],
         isActive: () => true,
         setEnabled: () => Promise.resolve(),
+        setOption: () => Promise.resolve(),
       },
     },
     pino({ level: 'silent' }),

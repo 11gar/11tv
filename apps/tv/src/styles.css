@@ -91,7 +91,8 @@ body {
   top: 9vh;
   bottom: 9vh;
   width: 23vw;
-  justify-content: center;
+  /* En haut, pas au centre : une carte à pages ne saute pas d’une page à l’autre. */
+  justify-content: flex-start;
 }
 
 .card-slot--left {

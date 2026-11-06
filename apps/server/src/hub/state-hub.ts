@@ -45,7 +45,7 @@ export type HubMusic = Pick<MusicService, 'state' | 'control' | 'pause' | 'playi
 
 export type HubPostIts = Pick<PostItBoard, 'list' | 'add' | 'remove' | 'clear'>;
 
-export type HubModules = Pick<ModuleManager, 'list' | 'setEnabled' | 'isActive'>;
+export type HubModules = Pick<ModuleManager, 'list' | 'setEnabled' | 'setOption' | 'isActive'>;
 
 export interface HubDeps {
   browser: BrowserController;
@@ -181,6 +181,8 @@ export class StateHub {
 
       case 'set-module-enabled':
         return this.deps.modules.setEnabled(message.id, message.enabled);
+      case 'set-module-option':
+        return this.deps.modules.setOption(message.id, message.key, message.value);
       case 'set-slide-interval':
         return settings.setSlideInterval(message.seconds);
       case 'delete-wallpaper':

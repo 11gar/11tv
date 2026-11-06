@@ -1,5 +1,7 @@
 import { logout } from '../api';
 import { displayMode } from '../display-mode';
+import { useState } from 'preact/hooks';
+import { ModuleOptions } from '../components/ModuleOptions';
 import { ModuleSettings } from '../components/ModuleSettings';
 import { PinSettings } from '../components/PinSettings';
 import { SlideIntervalSettings } from '../components/SlideIntervalSettings';
@@ -29,9 +31,24 @@ interface Props extends ScreenProps {
 }
 
 export function Settings({ state, send, notify, onLogout }: Props) {
+  // Page d'options d'un module, à la place des réglages tant qu'elle est ouverte.
+  const [optionsFor, setOptionsFor] = useState<string | null>(null);
+  const module = state?.modules.find((m) => m.id === optionsFor);
+  if (module) {
+    return (
+      <ModuleOptions
+        module={module}
+        send={send}
+        onBack={() => {
+          setOptionsFor(null);
+        }}
+      />
+    );
+  }
+
   return (
     <div class="stack">
-      <ModuleSettings modules={state?.modules ?? []} send={send} />
+      <ModuleSettings modules={state?.modules ?? []} send={send} onOpenOptions={setOptionsFor} />
       <WallpaperSettings wallpapers={state?.wallpapers ?? []} send={send} notify={notify} />
       {state && (
         <SlideIntervalSettings

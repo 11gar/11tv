@@ -67,6 +67,15 @@
   color: var(--mm-text-muted);
 }
 
+/* « Page 1/3 », à droite de l’en-tête, quand les Todos ne tiennent pas sur une page. */
+.mm-page {
+  margin-left: auto;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--mm-text-subtle);
+}
+
 .mm-card__logo {
   width: 1.3em;
   height: 1.3em;
@@ -80,6 +89,7 @@
   flex-shrink: 0; /* Trop de contenu : coupé en bas de carte, jamais superposé. */
   flex-direction: column;
   gap: var(--mm-space-2);
+  animation: fade-in 500ms ease both;
 }
 
 .mm-section__title {
@@ -215,7 +225,6 @@
 /* --- Pied de carte ------------------------------------------------------------------- */
 
 .mm-empty,
-.mm-more,
 .mm-stale {
   font-size: 0.8em;
   color: var(--mm-text-muted);

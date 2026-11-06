@@ -31,24 +31,36 @@ export interface TodoSectionView {
   total: number;
 }
 
+const SECTIONS = [
+  { id: 'today', title: 'Aujourd’hui' },
+  { id: 'undated', title: 'Sans date' },
+] as const;
+
 /**
- * « Aujourd'hui » (retards compris, comme dans Me'Mories) puis « Sans date », dans la limite
- * de `max` lignes au total : aujourd'hui passe en premier, le reste est compté à part. Les
- * todos à venir ne sont pas affichés.
+ * Pages de la carte : « Aujourd'hui » (retards compris, comme dans Me'Mories) puis « Sans
+ * date », `perPage` lignes par page. Une page reprend l'en-tête de chaque section qu'elle
+ * contient, avec le total de la section. Les todos à venir ne sont pas affichés.
  */
-export function splitTodos(todos: readonly MeMoriesTodo[], today: string, max: number) {
-  const now = todos.filter((todo) => todo.dueDate !== null && todo.dueDate <= today);
-  const undated = todos.filter((todo) => todo.dueDate === null);
-  const shownNow = now.slice(0, max);
-  const shownUndated = undated.slice(0, Math.max(0, max - shownNow.length));
-
-  const sections: TodoSectionView[] = [
-    { id: 'today' as const, title: 'Aujourd’hui', todos: shownNow, total: now.length },
-    { id: 'undated' as const, title: 'Sans date', todos: shownUndated, total: undated.length },
-  ].filter((section) => section.total > 0);
-
-  return {
-    sections,
-    hidden: now.length + undated.length - shownNow.length - shownUndated.length,
+export function paginateTodos(
+  todos: readonly MeMoriesTodo[],
+  today: string,
+  perPage: number,
+): TodoSectionView[][] {
+  const bySection = {
+    today: todos.filter((todo) => todo.dueDate !== null && todo.dueDate <= today),
+    undated: todos.filter((todo) => todo.dueDate === null),
   };
+  const rows = SECTIONS.flatMap(({ id }) => bySection[id].map((todo) => ({ id, todo })));
+
+  const pages: TodoSectionView[][] = [];
+  for (let start = 0; start < rows.length; start += perPage) {
+    const chunk = rows.slice(start, start + perPage);
+    pages.push(
+      SECTIONS.flatMap(({ id, title }) => {
+        const here = chunk.filter((row) => row.id === id).map((row) => row.todo);
+        return here.length > 0 ? [{ id, title, todos: here, total: bySection[id].length }] : [];
+      }),
+    );
+  }
+  return pages;
 }

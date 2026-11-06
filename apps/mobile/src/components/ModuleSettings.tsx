@@ -1,13 +1,16 @@
 import type { ClientMessage, ModuleInfo } from '@11tv/shared';
 import { haptic } from '../hooks/use-repeat';
+import { GearIcon } from './icons';
 
 interface Props {
   modules: readonly ModuleInfo[];
   send: (message: ClientMessage) => void;
+  /** Ouvre la page d'options d'un module (roue crantée). */
+  onOpenOptions: (id: string) => void;
 }
 
 /** Allumer ou éteindre chaque module (Me'Mories, post-it, et les suivants). */
-export function ModuleSettings({ modules, send }: Props) {
+export function ModuleSettings({ modules, send, onOpenOptions }: Props) {
   if (modules.length === 0) return null;
   return (
     <section class="card">
@@ -24,6 +27,18 @@ export function ModuleSettings({ modules, send }: Props) {
                 <span class="muted module-row__description">{module.description}</span>
                 {module.problem && <span class="module-row__problem">{module.problem}</span>}
               </div>
+              {module.options.length > 0 && (
+                <button
+                  type="button"
+                  class="module-row__gear"
+                  aria-label={`Options : ${module.name}`}
+                  onClick={() => {
+                    onOpenOptions(module.id);
+                  }}
+                >
+                  <GearIcon />
+                </button>
+              )}
               <button
                 type="button"
                 role="switch"

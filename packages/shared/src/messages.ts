@@ -32,6 +32,7 @@ export type ClientMessage =
   | { type: 'clear-postits' }
   // Réglages
   | { type: 'set-module-enabled'; id: string; enabled: boolean }
+  | { type: 'set-module-option'; id: string; key: string; value: number }
   | { type: 'set-slide-interval'; seconds: number }
   | { type: 'delete-wallpaper'; id: string }
   | { type: 'reorder-wallpapers'; order: string[] };

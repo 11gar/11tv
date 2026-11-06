@@ -69,7 +69,16 @@ export class PollingCardModule<K extends TvCard['kind']>
     const { id, kind, slot, log } = this.options;
     try {
       const data = await this.options.fetch();
-      this.current = { id, kind, slot, data, updatedAt: Date.now(), error: null } as CardOf<K>;
+      // Les options sont ajoutées par le serveur au moment de l’envoi (index.ts).
+      this.current = {
+        id,
+        kind,
+        slot,
+        data,
+        updatedAt: Date.now(),
+        error: null,
+        options: {},
+      } as CardOf<K>;
       log.debug({ module: id }, 'Carte actualisée');
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);

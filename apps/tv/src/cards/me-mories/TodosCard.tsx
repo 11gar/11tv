@@ -1,11 +1,16 @@
-import type { MeMoriesTodo, MeMoriesTodosCard } from '@11tv/shared';
+import {
+  ME_MORIES_PAGE_SECONDS,
+  ME_MORIES_PAGE_SECONDS_DEFAULT,
+  type MeMoriesTodo,
+  type MeMoriesTodosCard,
+} from '@11tv/shared';
 import type { CSSProperties } from 'preact';
 import { useEffect, useState } from 'preact/hooks';
-import { dueLabel, overdueDays, splitTodos, toIsoDate } from './sections';
+import { dueLabel, overdueDays, paginateTodos, toIsoDate } from './sections';
 import './todos-card.css';
 
-/** Lignes visibles au plus : la carte doit tenir en hauteur, même avec des tags partout. */
-const MAX_ROWS = 6;
+/** Lignes par page : la carte doit tenir en hauteur, même avec des tags partout. */
+const ROWS_PER_PAGE = 6;
 
 const timeFormat = new Intl.DateTimeFormat('fr-FR', { hour: '2-digit', minute: '2-digit' });
 
@@ -94,20 +99,41 @@ function TodoRow({ todo, today }: { todo: MeMoriesTodo; today: string }) {
 /** Carte « Todos » de Me'Mories, dans le style de l'application (palette sombre). */
 export function TodosCard({ card }: { card: MeMoriesTodosCard }) {
   const today = useToday();
-  const { sections, hidden } = splitTodos(card.data.todos, today, MAX_ROWS);
+  const pages = paginateTodos(card.data.todos, today, ROWS_PER_PAGE);
+  const seconds = card.options[ME_MORIES_PAGE_SECONDS] ?? ME_MORIES_PAGE_SECONDS_DEFAULT;
+  const [page, setPage] = useState(0);
+  // Une liste raccourcie (todo terminé, minuit) peut laisser la page courante hors limites.
+  const current = page < pages.length ? page : 0;
+  const sections = pages[current] ?? [];
+
+  useEffect(() => {
+    if (pages.length < 2) return;
+    const timer = window.setInterval(() => {
+      setPage((p) => (p + 1) % pages.length);
+    }, seconds * 1000);
+    return () => {
+      window.clearInterval(timer);
+    };
+  }, [pages.length, seconds]);
 
   return (
     <section class="mm-card">
       <header class="mm-card__header">
         <Icon name="checkSquare" class="mm-card__logo" />
         <span>Todos</span>
+        {pages.length > 1 && (
+          <span class="mm-page">
+            Page {current + 1}/{pages.length}
+          </span>
+        )}
       </header>
 
       {sections.length === 0 ? (
         <p class="mm-empty">Rien à faire aujourd’hui. Profitez-en !</p>
       ) : (
         sections.map((section) => (
-          <div key={section.id} class="mm-section">
+          // Clé par page : chaque nouvelle page apparaît en fondu.
+          <div key={`${String(current)}-${section.id}`} class="mm-section">
             <h2 class="mm-section__title">
               {section.title}
               <span class="mm-count">{section.total}</span>
@@ -121,7 +147,6 @@ export function TodosCard({ card }: { card: MeMoriesTodosCard }) {
         ))
       )}
 
-      {hidden > 0 && <p class="mm-more">et {String(hidden)} de plus dans Me’Mories</p>}
       {card.error && (
         <p class="mm-stale">
           Me’Mories injoignable : liste de {timeFormat.format(new Date(card.updatedAt))}

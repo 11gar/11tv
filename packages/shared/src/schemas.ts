@@ -2,7 +2,7 @@ import { z } from 'zod';
 import { PIN_PATTERN, SLIDE_INTERVAL_MAX_SEC, SLIDE_INTERVAL_MIN_SEC } from './constants';
 import type { ChangePinRequest, ClientMessage, LoginRequest } from './messages';
 import { MUSIC_ACTIONS, PLAYLIST_ID_PATTERN, VIDEO_ID_PATTERN } from './music';
-import { MODULE_ID_PATTERN } from './modules';
+import { MODULE_ID_PATTERN, MODULE_OPTION_KEY_PATTERN } from './modules';
 import { POSTIT_COLORS, POSTIT_TEXT_MAX } from './postits';
 import {
   MOUSE_BUTTONS,
@@ -52,6 +52,13 @@ export const clientMessageSchema = z.discriminatedUnion('type', [
     type: z.literal('set-module-enabled'),
     id: z.string().regex(MODULE_ID_PATTERN),
     enabled: z.boolean(),
+  }),
+  // La valeur est revérifiée par le module : elle doit faire partie de ses choix.
+  z.object({
+    type: z.literal('set-module-option'),
+    id: z.string().regex(MODULE_ID_PATTERN),
+    key: z.string().regex(MODULE_OPTION_KEY_PATTERN),
+    value: z.number(),
   }),
   z.object({
     type: z.literal('set-slide-interval'),
