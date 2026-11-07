@@ -1,6 +1,6 @@
 # 0001 – Pilotage d'Edge par le protocole DevTools (CDP)
 
-**Statut** : accepté (phase 1)
+**Statut** : accepté (phase 1), kiosque remplacé par le plein écran (novembre 2026)
 
 ## Contexte
 
@@ -29,3 +29,12 @@ Edge est lancé par le serveur et non par Playwright : `chromium.launch()` ajout
 - Risque : Google peut refuser une connexion avec le port ouvert. Parade : `edge-login.ps1`.
 - Risque : les options du kiosque peuvent changer avec Edge. La version est visible dans les
   journaux ; repli possible sur `--start-fullscreen`.
+
+## Révision : plein écran plutôt que kiosque
+
+Le kiosque d'Edge efface cookies et stockage à chaque fermeture, même avec un profil
+dédié (vérifié : un cookie déposé disparaît à la relance en `--kiosk`, reste en
+`--start-fullscreen`). Le redémarrage nocturne déconnectait donc tous les services. Edge est
+désormais lancé en `--start-fullscreen --hide-crash-restore-bubble`. On perd le verrouillage
+du kiosque (F11 sur un clavier branché à la Surface sort du plein écran), sans conséquence
+pour une TV pilotée depuis le téléphone.

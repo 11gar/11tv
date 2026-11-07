@@ -11,17 +11,18 @@ const base: EdgeOptions = {
 };
 
 describe('buildEdgeArgs', () => {
-  it('lance le mode kiosque plein écran avec un profil dédié et le port de debug', () => {
+  it('lance Edge en plein écran avec un profil dédié et le port de debug', () => {
     const args = buildEdgeArgs(base);
     expect(args).toContain('--user-data-dir=C:\\data\\edge-profile');
     expect(args).toContain('--remote-debugging-port=9222');
-    expect(args).toContain('--kiosk');
-    expect(args).toContain('--edge-kiosk-type=fullscreen');
+    expect(args).toContain('--start-fullscreen');
+    // Le kiosque d'Edge efface les connexions aux services à chaque fermeture.
+    expect(args).not.toContain('--kiosk');
     expect(args).toContain('http://127.0.0.1:8080/');
     expect(args).not.toContain('--enable-automation');
   });
 
-  it('ouvre une fenêtre d’application hors mode kiosque', () => {
+  it('ouvre une fenêtre d’application hors plein écran', () => {
     const args = buildEdgeArgs({ ...base, kiosk: false });
     expect(args).toContain('--app=http://127.0.0.1:8080/');
     expect(args).not.toContain('--kiosk');

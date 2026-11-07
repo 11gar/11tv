@@ -5,9 +5,9 @@
 .DESCRIPTION
   Google peut refuser une connexion quand le port de debug est ouvert. Ce script ouvre
   le même profil que le serveur, sans ce port, sur les pages de connexion. Les cookies
-  restent dans le profil : le kiosque sera ensuite connecté.
+  restent dans le profil : la TV sera ensuite connectée.
 
-  Le serveur 11TV doit être arrêté, et le kiosque fermé : sinon Edge transmet ces pages
+  Le serveur 11TV doit être arrêté, et Edge fermé : sinon Edge transmet ces pages
   à l'instance existante (avec port de debug) au lieu d'en ouvrir une nouvelle.
 #>
 [CmdletBinding()]
@@ -21,7 +21,7 @@ $edge = 'C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe'
 $running = Get-CimInstance Win32_Process -Filter "Name = 'msedge.exe'" |
   Where-Object { $_.CommandLine -like "*$ProfileDir*" }
 if ($running) {
-  throw "Un Edge utilise déjà le profil 11TV. Arrêtez le serveur et fermez le kiosque (Alt+F4), puis relancez."
+  throw "Un Edge utilise déjà le profil 11TV. Arrêtez le serveur et fermez Edge (Alt+F4), puis relancez."
 }
 
 New-Item -ItemType Directory -Force -Path $ProfileDir | Out-Null

@@ -14,6 +14,10 @@ export interface EdgeOptions {
   executable: string;
   profileDir: string;
   debugPort: number;
+  /**
+   * Vrai : plein écran pour la TV (ELEVENTV_EDGE_KIOSK, nom historique). Faux : fenêtre
+   * d'application, pratique en développement.
+   */
   kiosk: boolean;
   /** Faux : on se contente de s'attacher à un Edge lancé par ailleurs. */
   launch: boolean;
@@ -43,7 +47,9 @@ export function buildEdgeArgs(options: EdgeOptions): string[] {
     '--autoplay-policy=no-user-gesture-required',
   ];
   if (options.kiosk) {
-    args.push('--kiosk', options.startUrl, '--edge-kiosk-type=fullscreen');
+    // Plein écran et non --kiosk : le vrai kiosque d'Edge efface cookies et stockage à
+    // chaque fermeture, donc toutes les connexions aux services à chaque redémarrage.
+    args.push('--start-fullscreen', '--hide-crash-restore-bubble', options.startUrl);
   } else {
     args.push(`--app=${options.startUrl}`);
   }
@@ -352,7 +358,7 @@ export class EdgeBrowser extends EventEmitter<BrowserEvents> implements BrowserC
     const roles = pickPages(pages.map((p) => p.url()));
     const page = pages[roles.main];
     if (!page) {
-      // Normalement impossible en mode kiosque ; la prochaine réconciliation réessaiera.
+      // Normalement impossible : Edge est lancé sur l'accueil ; la prochaine réconciliation réessaiera.
       this.log.warn('Aucun onglet trouvé dans Edge');
       this.setStatus('unavailable');
       return;

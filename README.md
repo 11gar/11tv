@@ -23,13 +23,13 @@ téléphone Android (PWA) sur le Wi-Fi local.
 ## Fonctionnement
 
 ```
-Téléphone (PWA) ──HTTPS/WSS :8443──► Serveur Node ──CDP 127.0.0.1:9222──► Edge (kiosque)
+Téléphone (PWA) ──HTTPS/WSS :8443──► Serveur Node ──CDP 127.0.0.1:9222──► Edge (plein écran)
                                        │  ▲                                   │
                                        │  └──── WS ws://127.0.0.1:8080 ◄──────┘ écran TV
                                        └─ HTTP :8081 : page d'installation du certificat
 ```
 
-- Le **serveur** (Fastify) lance Edge en mode kiosque et le pilote via le protocole DevTools
+- Le **serveur** (Fastify) lance Edge en plein écran et le pilote via le protocole DevTools
   (CDP) : lancer un service revient à naviguer l'onglet vers son URL, « Accueil » le ramène
   sur l'écran TV.
 - L'**écran TV** est servi en HTTP sur `127.0.0.1` uniquement ; le **téléphone** passe par un
@@ -62,7 +62,7 @@ copy .env.example .env
 ```
 
 Le fichier `.env` d'exemple met les données dans `.data/` et ouvre Edge dans une fenêtre
-d'application plutôt qu'en kiosque.
+d'application plutôt qu'en plein écran.
 
 ```bash
 pnpm build
@@ -269,7 +269,7 @@ Données (jamais dans le dépôt), dans `%LOCALAPPDATA%\11TV\` :
 | `certs/`             | Autorité locale et certificat du serveur        |
 | `wallpapers/`        | Fonds d'écran                                   |
 | `thumbs/`            | Vignettes des fonds d'écran (régénérables)      |
-| `edge-profile/`      | Profil Edge du kiosque (cookies des services)   |
+| `edge-profile/`      | Profil Edge de la TV (cookies des services)     |
 | `modules/`           | Configuration et accès des modules de cartes    |
 | `logs/11tv.log`      | Journaux JSON                                   |
 
