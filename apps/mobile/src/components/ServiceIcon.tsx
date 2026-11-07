@@ -109,6 +109,35 @@ const ICONS: Record<ServiceId, JSX.Element> = {
       </text>
     </>
   ),
+  twitch: (
+    <>
+      <rect width="100" height="100" fill="#9146ff" />
+      <path
+        d="M30 24h46v31L62 69H51l-9 8v-8H30z"
+        fill="#fff"
+        stroke="#fff"
+        stroke-width="2"
+        stroke-linejoin="round"
+      />
+      <path d="M50 37v14M63 37v14" stroke="#9146ff" stroke-width="5" stroke-linecap="round" />
+    </>
+  ),
+  browser: (
+    <>
+      <defs>
+        <linearGradient id="browser-bg" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#4a5262" />
+          <stop offset="1" stop-color="#232833" />
+        </linearGradient>
+      </defs>
+      <rect width="100" height="100" fill="url(#browser-bg)" />
+      <g fill="none" stroke="#fff" stroke-width="3.5">
+        <circle cx="50" cy="50" r="27" />
+        <ellipse cx="50" cy="50" rx="11.5" ry="27" />
+        <path d="M23 50h54M27 36h46M27 64h46" stroke-width="3" />
+      </g>
+    </>
+  ),
 };
 
 export function ServiceIcon({ id }: { id: ServiceId }) {

@@ -1,4 +1,5 @@
 import {
+  BROWSER_PATH,
   getService,
   musicTrackUrl,
   POSTITS_MODULE_ID,
@@ -66,6 +67,7 @@ export interface HubDeps {
 
 /** Ce qu'affiche l'onglet principal, d'après son URL. */
 export function viewForUrl(url: string, homeUrl: string): View {
+  if (url.startsWith(new URL(BROWSER_PATH, homeUrl).href)) return 'browser';
   if (url.startsWith(homeUrl)) return 'home';
   return serviceForUrl(url) ?? 'other';
 }
@@ -132,9 +134,10 @@ export class StateHub {
         const service = getService(message.service);
         this.log.info({ service: service.id }, 'Lancement d’un service');
         if (service.id === 'youtube-music') return this.openMusic(service.url, false);
-        // Pas deux sons à la fois : la musique se met en pause quand on lance une vidéo.
-        await music.pause();
-        return browser.navigate(service.url);
+        // Pas deux sons à la fois : la musique se met en pause quand on lance une vidéo. Le
+        // navigateur vide la laisse jouer.
+        if (service.id !== 'browser') await music.pause();
+        return browser.navigate(new URL(service.url, this.deps.homeUrl).href);
       }
       case 'home':
         this.log.info('Retour à l’accueil');

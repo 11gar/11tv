@@ -4,7 +4,7 @@ Interface TV personnalisée pour une Surface Pro 8 branchée à la télé, pilot
 téléphone Android (PWA) sur le Wi-Fi local.
 
 > **État : phases 1 à 4 terminées.** Écran d'accueil TV (fonds d'écran en fondu, heure),
-> lancement de YouTube, YouTube Music, Disney+ et Prime Video depuis le téléphone,
+> lancement de YouTube, YouTube Music, Disney+, Prime Video, Twitch ou d'un navigateur depuis le téléphone,
 > télécommande (trackpad, clavier, volume), musique qui continue à l'accueil, réglages
 > (fonds d'écran, délai, PIN), PWA protégée par PIN, démarrage automatique et redémarrage
 > nocturne de la Surface. Feuille de route en bas de page.
@@ -199,7 +199,7 @@ Le téléphone tient sur une seule page, sur les mêmes fonds d'écran que la TV
 | ------------------- | ----------------------------------------------------------------------------------------------- |
 | Horloge             | Un appui ramène la TV à l'écran d'accueil                                                       |
 | Post-it (en haut)   | Écrire un mot et le coller sur l'accueil de la TV ; décoller ceux qui y sont                    |
-| Icônes des services | Lancent YouTube, YouTube Music, Disney+ ou Prime Video sur la TV                                |
+| Icônes des services | Lancent YouTube, YouTube Music, Disney+, Prime Video, Twitch ou le navigateur sur la TV         |
 | Trackpad            | Glisser : curseur · toucher : clic · deux doigts : défiler · toucher à deux doigts : clic droit |
 | Volume + et −       | Volume de Windows (maintenir pour répéter) ; celui de la TV reste sur sa télécommande           |
 | Clavier             | Texte envoyé au champ actif (cliquez-y d'abord avec le trackpad), Échap, Entrée, Espace, Tab…   |
@@ -213,7 +213,10 @@ session de l'utilisateur, pas comme service.
 **Musique** : YouTube Music s'ouvre dans sa propre fenêtre. « Accueil » la met de côté sans
 couper la lecture, et l'écran d'accueil affiche alors le titre en cours (pochette, titre,
 artiste). Sur le téléphone, la pastille du bas ouvre le lecteur complet (précédent, lecture/pause,
-suivant) et les titres écoutés récemment sur la TV, à relancer d'un appui. Lancer YouTube, Disney+ ou Prime Video met la musique en pause.
+suivant) et les titres écoutés récemment sur la TV, à relancer d'un appui. Lancer YouTube, Disney+, Prime Video ou Twitch met la musique en pause.
+
+**Navigateur** : ouvre sur la TV une page vide avec une barre d'adresse, et le clavier sur le
+téléphone. Tapez une adresse (`lemonde.fr`) ou une recherche (Google), puis Entrée.
 
 **Post-it** : on écrit directement sur le papier, on choisit sa couleur (et un autocollant
 si on veut), puis « Coller sur la TV » : il s'envole du téléphone et se plaque à droite de

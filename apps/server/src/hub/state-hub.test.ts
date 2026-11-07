@@ -174,6 +174,7 @@ describe('viewForUrl', () => {
     expect(viewForUrl(`${HOME}?x=1`, HOME)).toBe('home');
     expect(viewForUrl('https://www.disneyplus.com/fr-fr', HOME)).toBe('disney-plus');
     expect(viewForUrl('https://www.google.com/', HOME)).toBe('other');
+    expect(viewForUrl(`${HOME}navigateur?q=1`, HOME)).toBe('browser');
   });
 });
 
@@ -224,6 +225,22 @@ describe('StateHub : navigation', () => {
     await hub.handle({ type: 'home' });
     expect(browser.calls.at(-1)).toBe(`goto ${HOME}`);
     expect(remote.last()).toMatchObject({ state: { view: 'home' } });
+  });
+
+  it('ouvre le navigateur vide de l’écran TV sans couper la musique', async () => {
+    const { hub, client, browser, music } = setup();
+    const remote = client('remote');
+    hub.addClient(remote.c);
+    music.playing = true;
+
+    await hub.handle({ type: 'launch', service: 'browser' });
+    expect(browser.calls).toEqual([`goto ${HOME}navigateur`]);
+    expect(music.calls).toEqual([]);
+    expect(remote.last()).toMatchObject({ state: { view: 'browser' } });
+
+    await hub.handle({ type: 'launch', service: 'twitch' });
+    expect(browser.calls.at(-1)).toBe('goto https://www.twitch.tv/');
+    expect(music.calls).toEqual(['pause']);
   });
 
   it('propage l’erreur si le navigateur est indisponible', async () => {

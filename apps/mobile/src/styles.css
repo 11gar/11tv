@@ -238,7 +238,7 @@ button {
 
 .services {
   display: grid;
-  grid-template-columns: repeat(2, var(--icon-size));
+  grid-template-columns: repeat(3, var(--icon-size));
   gap: 14px;
   --icon-size: clamp(64px, 25vw, 104px);
 }

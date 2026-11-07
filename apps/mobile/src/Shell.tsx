@@ -23,12 +23,14 @@ import { haptic } from './hooks/use-repeat';
 import { Music } from './screens/Music';
 import { Settings } from './screens/Settings';
 
-/** Ordre des icônes, deux par ligne. */
+/** Ordre des icônes, trois par ligne. */
 const SERVICE_ORDER: readonly ServiceId[] = [
   'prime-video',
   'youtube-music',
   'youtube',
   'disney-plus',
+  'twitch',
+  'browser',
 ];
 
 type Panel = 'settings' | 'keyboard' | 'music' | 'postits';
@@ -176,6 +178,8 @@ export function Shell({ onSessionLost }: Props) {
               onClick={() => {
                 haptic();
                 send({ type: 'launch', service: service.id });
+                // Le navigateur vide attend une adresse : le clavier s'ouvre directement.
+                if (service.id === 'browser') setPanel('keyboard');
               }}
             >
               <ServiceIcon id={service.id} />

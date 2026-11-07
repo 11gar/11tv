@@ -1,10 +1,24 @@
-export const SERVICE_IDS = ['youtube', 'youtube-music', 'disney-plus', 'prime-video'] as const;
+export const SERVICE_IDS = [
+  'youtube',
+  'youtube-music',
+  'disney-plus',
+  'prime-video',
+  'twitch',
+  'browser',
+] as const;
 
 export type ServiceId = (typeof SERVICE_IDS)[number];
+
+/** Page « navigateur vide » de l'écran TV. */
+export const BROWSER_PATH = '/navigateur';
 
 export interface ServiceDefinition {
   id: ServiceId;
   name: string;
+  /**
+   * Adresse ouverte au lancement. Un chemin (« /navigateur ») désigne une page de l'écran TV
+   * lui-même, résolue sur son adresse d'accueil.
+   */
   url: string;
   /** Domaines rattachés au service (sous-domaines inclus). */
   domains: readonly string[];
@@ -40,6 +54,21 @@ export const SERVICES: readonly ServiceDefinition[] = [
     url: 'https://www.primevideo.com/',
     domains: ['primevideo.com'],
     accent: '#1fb5ff',
+  },
+  {
+    id: 'twitch',
+    name: 'Twitch',
+    url: 'https://www.twitch.tv/',
+    domains: ['twitch.tv'],
+    accent: '#9146ff',
+  },
+  {
+    // Page vide de l'écran TV, avec une barre d'adresse à remplir depuis le clavier du téléphone.
+    id: 'browser',
+    name: 'Navigateur',
+    url: BROWSER_PATH,
+    domains: [],
+    accent: '#8a94a6',
   },
 ];
 

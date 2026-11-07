@@ -9,6 +9,7 @@ describe('serviceForUrl', () => {
     ['https://music.youtube.com/watch?v=abc', 'youtube-music'],
     ['https://www.disneyplus.com/fr-fr/home', 'disney-plus'],
     ['https://www.primevideo.com/region/eu/storefront', 'prime-video'],
+    ['https://www.twitch.tv/directory', 'twitch'],
   ])('%s -> %s', (url, expected) => {
     expect(serviceForUrl(url)).toBe(expected);
   });
