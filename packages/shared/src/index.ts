@@ -6,3 +6,4 @@ export * from './music';
 export * from './postits';
 export * from './remote';
 export * from './services';
+export * from './video';

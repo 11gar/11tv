@@ -51,7 +51,7 @@ $limit = [datetime]::ParseExact($Deadline, 'HH:mm', $null)
 if (-not $reason -and $now -ge $limit) { $reason = "échéance de $Deadline atteinte" }
 
 if (-not $reason) {
-  Write-Log ("TV utilisée (vue : {0}, musique : {1}) : redémarrage reporté" -f $health.view, $health.musicPlaying)
+  Write-Log ("TV utilisée (vue : {0}, musique : {1}, vidéo : {2}) : redémarrage reporté" -f $health.view, $health.musicPlaying, $health.videoPlaying)
   exit 0
 }
 

@@ -1,8 +1,11 @@
 import { createHash } from 'node:crypto';
 import sharp from 'sharp';
 
-/** Hôtes d'où viennent les pochettes de YouTube Music. Rien d'autre n'est relayé. */
-const ALLOWED_HOSTS = ['ytimg.com', 'googleusercontent.com', 'ggpht.com'];
+/**
+ * Hôtes d'où viennent les pochettes de YouTube Music et les images des vidéos (YouTube,
+ * Twitch). Rien d'autre n'est relayé.
+ */
+const ALLOWED_HOSTS = ['ytimg.com', 'googleusercontent.com', 'ggpht.com', 'jtvnw.net'];
 const MAX_BYTES = 2 * 1024 * 1024;
 const FETCH_TIMEOUT_MS = 5_000;
 const CACHE_ENTRIES = 40;

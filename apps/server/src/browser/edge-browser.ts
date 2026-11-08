@@ -1,7 +1,8 @@
-import { serviceForUrl, type BrowserStatus } from '@11tv/shared';
+import { BROWSER_PATH, serviceForUrl, type BrowserStatus } from '@11tv/shared';
 import { spawn } from 'node:child_process';
 import { EventEmitter } from 'node:events';
 import { chromium, type Browser, type CDPSession, type Page } from 'playwright-core';
+import { UserFacingError } from '../errors';
 import type { Logger } from '../log';
 import {
   BrowserUnavailableError,
@@ -21,6 +22,7 @@ export interface EdgeOptions {
   kiosk: boolean;
   /** Faux : on se contente de s'attacher à un Edge lancé par ailleurs. */
   launch: boolean;
+  /** Accueil de la TV, ouvert dans l'onglet principal. */
   startUrl: string;
 }
 
@@ -58,15 +60,37 @@ export function buildEdgeArgs(options: EdgeOptions): string[] {
 
 /**
  * Retrouve les rôles des onglets ouverts, au démarrage ou après un redémarrage du serveur :
- * la fenêtre de musique est un onglet YouTube Music à côté de l'onglet principal. Seul, un
- * onglet YouTube Music est l'onglet principal.
+ * l'onglet principal est sur l'accueil, la fenêtre de musique sur YouTube Music, et la
+ * fenêtre des services est l'onglet restant. Sans onglet d'accueil, le premier onglet
+ * (hors musique) devient l'onglet principal ; seul, un onglet est toujours le principal.
  */
-export function pickPages(urls: readonly string[]): { main: number; music: number | null } {
-  if (urls.length < 2) return { main: 0, music: null };
-  const music = urls.findLastIndex((url) => serviceForUrl(url) === 'youtube-music');
-  if (music === -1) return { main: 0, music: null };
-  return { main: music === 0 ? 1 : 0, music };
+export function pickPages(
+  urls: readonly string[],
+  homeUrl: string,
+): { main: number; music: number | null; video: number | null } {
+  if (urls.length < 2) return { main: 0, music: null, video: null };
+  const browserPage = new URL(BROWSER_PATH, homeUrl).href;
+  const isHome = (url: string) => url.startsWith(homeUrl) && !url.startsWith(browserPage);
+  const musicIndex = urls.findLastIndex((url) => serviceForUrl(url) === 'youtube-music');
+  const music = musicIndex === -1 ? null : musicIndex;
+  const homeIndex = urls.findIndex((url, i) => i !== music && isHome(url));
+  const main = homeIndex !== -1 ? homeIndex : urls.findIndex((_, i) => i !== music);
+  const videoIndex = urls.findLastIndex((_, i) => i !== main && i !== music);
+  return { main, music, video: videoIndex === -1 ? null : videoIndex };
 }
+
+/** Fenêtre à part (musique ou services), réduite quand l'accueil est devant. */
+interface SideWindow {
+  page: Page;
+  windowId: number;
+}
+
+type Side = 'music' | 'video';
+
+const SIDE_NAMES: Record<Side, string> = {
+  music: 'YouTube Music',
+  video: 'des services',
+};
 
 /**
  * Edge piloté par le protocole DevTools (CDP).
@@ -75,8 +99,9 @@ export function pickPages(urls: readonly string[]): { main: number; music: numbe
  * l'onglet principal est attaché ; sinon elle (re)lance Edge ou s'y rattache. Le serveur peut
  * donc redémarrer sans tuer Edge, et Edge peut planter sans que le serveur ne s'en soucie.
  *
- * YouTube Music vit dans sa propre fenêtre, créée réduite. L'afficher la passe en plein écran
- * par-dessus le kiosque ; revenir à l'accueil la réduit, sans couper la lecture (une page
+ * L'onglet principal reste sur l'accueil. Les services (YouTube, Twitch…) et YouTube Music
+ * vivent chacun dans leur propre fenêtre, créée réduite. Les afficher les passe en plein écran
+ * par-dessus l'accueil ; revenir à l'accueil les réduit, sans couper la lecture (une page
  * réduite reste « visible » pour Chromium et n'est pas ralentie).
  *
  * Edge est lancé par nous et non par Playwright : Playwright ajouterait --enable-automation,
@@ -86,8 +111,7 @@ export class EdgeBrowser extends EventEmitter<BrowserEvents> implements BrowserC
   private browser: Browser | null = null;
   private cdp: CDPSession | null = null;
   private page: Page | null = null;
-  private musicPage: Page | null = null;
-  private musicWindowId: number | null = null;
+  private readonly sides: Record<Side, SideWindow | null> = { music: null, video: null };
   private foregroundValue: Foreground = 'main';
   private timer: NodeJS.Timeout | null = null;
   private reconciling = false;
@@ -113,7 +137,11 @@ export class EdgeBrowser extends EventEmitter<BrowserEvents> implements BrowserC
   }
 
   get hasMusic(): boolean {
-    return this.musicPage !== null && !this.musicPage.isClosed();
+    return this.sidePage('music') !== null;
+  }
+
+  get hasVideo(): boolean {
+    return this.sidePage('video') !== null;
   }
 
   start(): void {
@@ -134,33 +162,37 @@ export class EdgeBrowser extends EventEmitter<BrowserEvents> implements BrowserC
     await page.goto(url, { waitUntil: 'commit', timeout: NAVIGATION_TIMEOUT_MS });
   }
 
-  showMusic(url: string, reload: boolean): Promise<void> {
+  openVideo(url: string): Promise<void> {
+    return this.openSide('video', url, true);
+  }
+
+  showVideo(): Promise<void> {
     return this.inWindowQueue(async () => {
-      let page = this.hasMusic ? this.musicPage : null;
-      if (!page) {
-        page = await this.createMusicPage(url);
-      } else if (reload) {
-        await page.goto(url, { waitUntil: 'commit', timeout: NAVIGATION_TIMEOUT_MS });
-      }
-      await this.setMusicWindow(true);
-      await page.bringToFront();
-      this.setForeground('music');
+      if (!this.hasVideo) throw new UserFacingError('Aucune vidéo en cours');
+      await this.showSide('video');
     });
+  }
+
+  showMusic(url: string, reload: boolean): Promise<void> {
+    return this.openSide('music', url, reload);
   }
 
   showMain(): Promise<void> {
     return this.inWindowQueue(async () => {
       const page = this.mainPage();
-      if (this.hasMusic) await this.setMusicWindow(false);
+      await this.setSideWindow('music', false);
+      await this.setSideWindow('video', false);
       await page.bringToFront();
       this.setForeground('main');
     });
   }
 
   async evaluateInMusic(expression: string): Promise<unknown> {
-    const page = this.hasMusic ? this.musicPage : null;
-    if (!page) return undefined;
-    return page.evaluate(expression);
+    return this.sidePage('music')?.evaluate(expression);
+  }
+
+  async evaluateInVideo(expression: string): Promise<unknown> {
+    return this.sidePage('video')?.evaluate(expression);
   }
 
   async goBack(): Promise<void> {
@@ -181,9 +213,16 @@ export class EdgeBrowser extends EventEmitter<BrowserEvents> implements BrowserC
     return page;
   }
 
+  private sidePage(side: Side): Page | null {
+    const page = this.sides[side]?.page;
+    return page && !page.isClosed() ? page : null;
+  }
+
   private frontPage(): Page {
-    if (this.foregroundValue === 'music' && this.musicPage && !this.musicPage.isClosed()) {
-      return this.musicPage;
+    const foreground = this.foregroundValue;
+    if (foreground !== 'main') {
+      const page = this.sidePage(foreground);
+      if (page) return page;
     }
     return this.mainPage();
   }
@@ -208,14 +247,37 @@ export class EdgeBrowser extends EventEmitter<BrowserEvents> implements BrowserC
     this.emit('status', status);
   }
 
-  // --- Fenêtre de musique ---------------------------------------------------------------
+  // --- Fenêtres de musique et des services ----------------------------------------------
 
   private browserCdp(): CDPSession {
     if (!this.cdp) throw new BrowserUnavailableError();
     return this.cdp;
   }
 
-  private async createMusicPage(url: string): Promise<Page> {
+  /** Ouvre `url` dans la fenêtre `side` (créée au besoin, rechargée si `reload`), et l'affiche. */
+  private openSide(side: Side, url: string, reload: boolean): Promise<void> {
+    return this.inWindowQueue(async () => {
+      const page = this.sidePage(side);
+      if (!page) {
+        await this.createSidePage(side, url);
+      } else if (reload) {
+        await page.goto(url, { waitUntil: 'commit', timeout: NAVIGATION_TIMEOUT_MS });
+      }
+      await this.showSide(side);
+    });
+  }
+
+  /** Affiche la fenêtre `side` en plein écran ; l'autre fenêtre est réduite. */
+  private async showSide(side: Side): Promise<void> {
+    const page = this.sidePage(side);
+    if (!page) return;
+    await this.setSideWindow(side === 'music' ? 'video' : 'music', false);
+    await this.setSideWindow(side, true);
+    await page.bringToFront();
+    this.setForeground(side);
+  }
+
+  private async createSidePage(side: Side, url: string): Promise<Page> {
     const context = this.browser?.contexts()[0];
     if (!context) throw new BrowserUnavailableError();
     // Créée réduite et en arrière-plan : rien ne s'affiche par-dessus la TV avant qu'on le décide.
@@ -230,26 +292,30 @@ export class EdgeBrowser extends EventEmitter<BrowserEvents> implements BrowserC
     const { windowId } = await this.browserCdp().send('Browser.getWindowForTarget', {
       targetId,
     });
-    this.trackMusicPage(page, windowId);
-    this.log.info('Fenêtre YouTube Music créée');
+    this.trackSidePage(side, page, windowId);
+    this.log.info(`Fenêtre ${SIDE_NAMES[side]} créée`);
     return page;
   }
 
-  private trackMusicPage(page: Page, windowId: number): void {
-    this.musicPage = page;
-    this.musicWindowId = windowId;
+  private trackSidePage(side: Side, page: Page, windowId: number): void {
+    this.sides[side] = { page, windowId };
+    if (side === 'video') {
+      page.on('framenavigated', (frame) => {
+        if (frame === page.mainFrame()) this.emit('navigated', frame.url(), 'video');
+      });
+      this.emit('navigated', page.url(), 'video');
+    }
     page.on('close', () => {
-      if (this.musicPage !== page) return;
-      this.musicPage = null;
-      this.musicWindowId = null;
-      this.log.warn('Fenêtre YouTube Music fermée');
-      this.setForeground('main');
+      if (this.sides[side]?.page !== page) return;
+      this.sides[side] = null;
+      this.log.warn(`Fenêtre ${SIDE_NAMES[side]} fermée`);
+      if (this.foregroundValue === side) this.setForeground('main');
     });
   }
 
-  private async setMusicWindow(visible: boolean): Promise<void> {
-    const windowId = this.musicWindowId;
-    if (windowId === null) return;
+  private async setSideWindow(side: Side, visible: boolean): Promise<void> {
+    const windowId = this.sidePage(side) ? this.sides[side]?.windowId : undefined;
+    if (windowId === undefined) return;
     const setBounds = (bounds: WindowBounds) =>
       this.browserCdp().send('Browser.setWindowBounds', { windowId, bounds });
 
@@ -260,7 +326,7 @@ export class EdgeBrowser extends EventEmitter<BrowserEvents> implements BrowserC
     } else if (this.options.kiosk) {
       await setBounds({ windowState: 'fullscreen' });
     } else {
-      // En développement, la musique prend la place de la fenêtre d'application.
+      // En développement, la fenêtre prend la place de la fenêtre d'application.
       const { left, top, width, height } = await this.windowOf(this.mainPage());
       await setBounds({ left, top, width, height });
     }
@@ -341,8 +407,8 @@ export class EdgeBrowser extends EventEmitter<BrowserEvents> implements BrowserC
       this.browser = null;
       this.cdp = null;
       this.page = null;
-      this.musicPage = null;
-      this.musicWindowId = null;
+      this.sides.music = null;
+      this.sides.video = null;
       this.log.warn('Navigateur déconnecté');
       this.setForeground('main');
       this.setStatus(this.stopping ? 'unavailable' : 'starting');
@@ -355,7 +421,10 @@ export class EdgeBrowser extends EventEmitter<BrowserEvents> implements BrowserC
   private async attachPages(browser: Browser): Promise<void> {
     const context = browser.contexts()[0];
     const pages = context?.pages().filter((p) => !p.url().startsWith('devtools://')) ?? [];
-    const roles = pickPages(pages.map((p) => p.url()));
+    const roles = pickPages(
+      pages.map((p) => p.url()),
+      this.options.startUrl,
+    );
     const page = pages[roles.main];
     if (!page) {
       // Normalement impossible : Edge est lancé sur l'accueil ; la prochaine réconciliation réessaiera.
@@ -365,23 +434,34 @@ export class EdgeBrowser extends EventEmitter<BrowserEvents> implements BrowserC
     }
     this.page = page;
     page.on('framenavigated', (frame) => {
-      if (frame === page.mainFrame()) this.emit('navigated', frame.url());
+      if (frame === page.mainFrame()) this.emit('navigated', frame.url(), 'main');
     });
     page.on('close', () => {
       if (this.page === page) this.page = null;
     });
 
-    const music = roles.music === null ? undefined : pages[roles.music];
-    if (music && this.musicPage !== music) {
-      const { windowId, windowState } = await this.windowOf(music);
-      if (windowId !== undefined) {
-        this.trackMusicPage(music, windowId);
-        this.setForeground(windowState === 'minimized' ? 'main' : 'music');
-        this.log.info('Fenêtre YouTube Music retrouvée');
-      }
+    let foreground: Foreground = 'main';
+    for (const side of ['music', 'video'] as const) {
+      const index = roles[side];
+      const found = index === null ? undefined : pages[index];
+      if (!found || this.sides[side]?.page === found) continue;
+      const { windowId, windowState } = await this.windowOf(found);
+      if (windowId === undefined) continue;
+      this.trackSidePage(side, found, windowId);
+      if (windowState !== 'minimized') foreground = side;
+      this.log.info(`Fenêtre ${SIDE_NAMES[side]} retrouvée`);
+    }
+    this.setForeground(foreground);
+
+    // Le serveur vient de (re)démarrer, peut-être après une mise à jour : l'accueil est
+    // rechargé pour prendre la nouvelle version de l'écran TV (il n'a rien à perdre).
+    if (page.url().startsWith(this.options.startUrl)) {
+      await page.reload({ waitUntil: 'commit', timeout: NAVIGATION_TIMEOUT_MS }).catch(() => {
+        this.log.warn('Accueil non rechargé');
+      });
     }
 
-    this.emit('navigated', page.url());
+    this.emit('navigated', page.url(), 'main');
     this.setStatus('ready');
     this.log.info({ url: page.url() }, 'Onglet principal attaché');
   }

@@ -6,6 +6,7 @@ import type { MusicAction, MusicState } from './music';
 import type { PostIt, PostItColor } from './postits';
 import type { RemoteKey, VolumeAction, MouseButton } from './remote';
 import type { ServiceId } from './services';
+import type { VideoAction, VideoNowPlaying } from './video';
 
 // ---------------------------------------------------------------------------
 // Client -> serveur (validé côté serveur)
@@ -26,6 +27,9 @@ export type ClientMessage =
   // Musique
   | { type: 'music'; action: MusicAction }
   | { type: 'play-track'; videoId: string; playlistId: string | null }
+  // Vidéo des services, en cours ou en arrière-plan
+  | { type: 'video'; action: VideoAction }
+  | { type: 'show-video' }
   // Post-it
   | { type: 'add-postit'; text: string; color: PostItColor }
   | { type: 'remove-postit'; id: string }
@@ -43,7 +47,7 @@ export type ClientMessageType = ClientMessage['type'];
 // État partagé, poussé en entier à chaque changement (il reste petit)
 // ---------------------------------------------------------------------------
 
-/** Ce qu'affiche la TV : l'onglet principal d'Edge, ou YouTube Music quand il est devant. */
+/** Ce qu'affiche la TV : l'accueil, ou le service devant (fenêtre des services ou de YouTube Music). */
 export type View = 'home' | ServiceId | 'other';
 
 export type BrowserStatus = 'starting' | 'ready' | 'unavailable';
@@ -65,6 +69,8 @@ export interface AppState {
   /** Faux si le pilote souris et volume de Windows n'est pas disponible. */
   pointerAvailable: boolean;
   music: MusicState;
+  /** Lecture dans la fenêtre des services, qui continue à l'accueil ; null sans lecture. */
+  video: VideoNowPlaying | null;
   /** Post-it collés sur la TV, du plus ancien au plus récent (vide si le module est éteint). */
   postIts: PostIt[];
   /** Modules (Me'Mories, post-it…) et leur état, pour Réglages → Modules. */

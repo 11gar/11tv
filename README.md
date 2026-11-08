@@ -5,7 +5,7 @@ téléphone Android (PWA) sur le Wi-Fi local.
 
 > **État : phases 1 à 4 terminées.** Écran d'accueil TV (fonds d'écran en fondu, heure),
 > lancement de YouTube, YouTube Music, Disney+, Prime Video, Twitch ou d'un navigateur depuis le téléphone,
-> télécommande (trackpad, clavier, volume), musique qui continue à l'accueil, réglages
+> télécommande (trackpad, clavier, volume), musique et vidéos qui continuent à l'accueil, réglages
 > (fonds d'écran, délai, PIN), PWA protégée par PIN, démarrage automatique et redémarrage
 > nocturne de la Surface. Feuille de route en bas de page.
 
@@ -30,8 +30,8 @@ Téléphone (PWA) ──HTTPS/WSS :8443──► Serveur Node ──CDP 127.0.0.
 ```
 
 - Le **serveur** (Fastify) lance Edge en plein écran et le pilote via le protocole DevTools
-  (CDP) : lancer un service revient à naviguer l'onglet vers son URL, « Accueil » le ramène
-  sur l'écran TV.
+  (CDP) : l'onglet principal affiche l'écran TV ; les services et YouTube Music s'ouvrent
+  chacun dans leur fenêtre, que « Accueil » réduit sans couper la lecture.
 - L'**écran TV** est servi en HTTP sur `127.0.0.1` uniquement ; le **téléphone** passe par un
   serveur HTTPS exposé au réseau local et protégé par PIN.
 - Tout l'état est poussé par WebSocket ; les clients se reconnectent seuls.
@@ -164,7 +164,7 @@ de cette personne » → « Ajouter un utilisateur sans compte Microsoft ».
 
 Le **lanceur** (`run-11tv.ps1`) coupe les notifications de la session, démarre le serveur et
 le relance s'il s'arrête ou ne répond plus (vérification toutes les 30 s). Le **redémarrage
-nocturne** attend que la TV soit sur l'accueil sans musique ; il installe au passage les
+nocturne** attend que la TV soit sur l'accueil sans musique ni vidéo ; il installe au passage les
 mises à jour Windows en attente.
 
 ### Mettre à jour
@@ -195,16 +195,16 @@ n'est pas installé pour ce compte), reconstruit, puis arrête le serveur : le l
 
 Le téléphone tient sur une seule page, sur les mêmes fonds d'écran que la TV :
 
-| Élément             | Usage                                                                                           |
-| ------------------- | ----------------------------------------------------------------------------------------------- |
-| Horloge             | Un appui ramène la TV à l'écran d'accueil                                                       |
-| Post-it (en haut)   | Écrire un mot et le coller sur l'accueil de la TV ; décoller ceux qui y sont                    |
-| Icônes des services | Lancent YouTube, YouTube Music, Disney+, Prime Video, Twitch ou le navigateur sur la TV         |
-| Trackpad            | Glisser : curseur · toucher : clic · deux doigts : défiler · toucher à deux doigts : clic droit |
-| Volume + et −       | Volume de Windows (maintenir pour répéter) ; celui de la TV reste sur sa télécommande           |
-| Clavier             | Texte envoyé au champ actif (cliquez-y d'abord avec le trackpad), Échap, Entrée, Espace, Tab…   |
-| Pastille musique    | Lecture/pause ; un appui ailleurs ouvre le lecteur complet et les titres récents                |
-| Roue dentée         | Réglages                                                                                        |
+| Élément               | Usage                                                                                           |
+| --------------------- | ----------------------------------------------------------------------------------------------- |
+| Horloge               | Un appui ramène la TV à l'écran d'accueil                                                       |
+| Post-it (en haut)     | Écrire un mot et le coller sur l'accueil de la TV ; décoller ceux qui y sont                    |
+| Icônes des services   | Lancent YouTube, YouTube Music, Disney+, Prime Video, Twitch ou le navigateur sur la TV         |
+| Trackpad              | Glisser : curseur · toucher : clic · deux doigts : défiler · toucher à deux doigts : clic droit |
+| Volume + et −         | Volume de Windows (maintenir pour répéter) ; celui de la TV reste sur sa télécommande           |
+| Clavier               | Texte envoyé au champ actif (cliquez-y d'abord avec le trackpad), Échap, Entrée, Espace, Tab…   |
+| Pastille « en cours » | Lecture/pause ; un appui ailleurs ouvre le lecteur de musique, ou ramène la vidéo sur la TV     |
+| Roue dentée           | Réglages                                                                                        |
 
 Les touches passent par Edge lui-même : elles fonctionnent même si Edge n'a pas le focus.
 La souris et le volume passent par Windows (`SendInput`) : le serveur doit tourner dans la
@@ -214,6 +214,12 @@ session de l'utilisateur, pas comme service.
 couper la lecture, et l'écran d'accueil affiche alors le titre en cours (pochette, titre,
 artiste). Sur le téléphone, la pastille du bas ouvre le lecteur complet (précédent, lecture/pause,
 suivant) et les titres écoutés récemment sur la TV, à relancer d'un appui. Lancer YouTube, Disney+, Prime Video ou Twitch met la musique en pause.
+
+**Vidéos en arrière-plan** : « Accueil » ne coupe pas non plus une vidéo (YouTube, Twitch,
+Disney+…) : le son continue, et l'accueil de la TV comme la pastille du téléphone affichent ce
+qui joue. Sur le téléphone, le bouton de la pastille met la vidéo en pause ou la relance, et
+un appui ailleurs la ramène sur la TV. Une seule source joue à la fois : relancer la musique
+met la vidéo en pause, et inversement ([ADR 0009](docs/adr/0009-lecture-en-arriere-plan.md)).
 
 **Navigateur** : ouvre sur la TV une page vide avec une barre d'adresse, et le clavier sur le
 téléphone. Tapez une adresse (`lemonde.fr`) ou une recherche (Google), puis Entrée.

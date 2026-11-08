@@ -1,10 +1,16 @@
-import { NOW_PLAYING_IDLE_HIDE_MS, type NowPlaying } from '@11tv/shared';
-import { usePlaybackPosition } from '@11tv/web';
+import {
+  NOW_PLAYING_IDLE_HIDE_MS,
+  type ActiveNowPlaying,
+  type NowPlaying,
+  type ServiceId,
+} from '@11tv/shared';
+import { ServiceIcon, usePlaybackPosition } from '@11tv/web';
 import { useEffect, useRef, useState } from 'preact/hooks';
 import { usePixelShift } from '../hooks/use-pixel-shift';
 
 interface Props {
-  nowPlaying: NowPlaying | null;
+  /** Musique ou vidéo en cours (la vidéo continue en arrière-plan à l'accueil). */
+  active: ActiveNowPlaying | null;
 }
 
 /** Vrai pendant la lecture, et encore un moment après une mise en pause. */
@@ -30,14 +36,23 @@ function useVisible(nowPlaying: NowPlaying | null): boolean {
 /**
  * Carte « En cours de lecture » en bas de l'écran : pochette, titre, artiste et une fine
  * barre de progression collée au bord inférieur. En pause, son contenu est flouté sous un
- * pictogramme pause. Elle garde le dernier titre pendant son fondu de sortie.
+ * pictogramme pause. Elle garde le dernier titre pendant son fondu de sortie. Pour une vidéo
+ * sans image (Twitch en direct, Disney+…), l'icône du service tient lieu de pochette.
  */
-export function NowPlayingBar({ nowPlaying }: Props) {
+export function NowPlayingBar({ active }: Props) {
+  const nowPlaying = active?.track ?? null;
   const visible = useVisible(nowPlaying);
   const shift = usePixelShift();
-  const lastShown = useRef<NowPlaying | null>(null);
-  if (visible && nowPlaying) lastShown.current = nowPlaying;
-  const track = visible ? nowPlaying : lastShown.current;
+  const lastShown = useRef<{ track: NowPlaying; service: ServiceId | null } | null>(null);
+  if (visible && active) {
+    lastShown.current = {
+      track: active.track,
+      service: active.kind === 'video' ? active.track.service : null,
+    };
+  }
+  const shown = lastShown.current;
+  const track = shown?.track ?? null;
+  const service = shown?.service ?? null;
   const position = usePlaybackPosition(track);
   if (!track) return null;
 
@@ -55,7 +70,11 @@ export function NowPlayingBar({ nowPlaying }: Props) {
     >
       <div class="now-playing__content">
         <div class="now-playing__art">
-          {track.artworkUrl && <img src={track.artworkUrl} alt="" />}
+          {track.artworkUrl ? (
+            <img src={track.artworkUrl} alt="" />
+          ) : (
+            service && <ServiceIcon id={service} />
+          )}
         </div>
         <div class="now-playing__text">
           <div class="now-playing__title">{track.title}</div>

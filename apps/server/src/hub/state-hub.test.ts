@@ -30,12 +30,31 @@ class FakeMusic implements HubMusic {
   }
 }
 
+class FakeVideo {
+  playing = false;
+  readonly calls: string[] = [];
+  state() {
+    return null;
+  }
+  playPause(): Promise<void> {
+    this.calls.push('play-pause');
+    this.playing = !this.playing;
+    return Promise.resolve();
+  }
+  pause(): Promise<void> {
+    if (this.playing) this.calls.push('pause');
+    this.playing = false;
+    return Promise.resolve();
+  }
+}
+
 const HOME = 'http://127.0.0.1:8080/';
 
 class FakeBrowser extends EventEmitter<BrowserEvents> implements BrowserController {
   status: BrowserStatus = 'ready';
   foreground: Foreground = 'main';
   hasMusic = false;
+  hasVideo = false;
   readonly calls: string[] = [];
   start(): void {
     this.emit('status', this.status);
@@ -47,8 +66,24 @@ class FakeBrowser extends EventEmitter<BrowserEvents> implements BrowserControll
     if (this.status !== 'ready') return Promise.reject(new BrowserUnavailableError());
     this.calls.push(`goto ${url}`);
     this.setForeground('main');
-    this.emit('navigated', url);
+    this.emit('navigated', url, 'main');
     return Promise.resolve();
+  }
+  openVideo(url: string): Promise<void> {
+    if (this.status !== 'ready') return Promise.reject(new BrowserUnavailableError());
+    this.calls.push(`video ${url}`);
+    this.hasVideo = true;
+    this.emit('navigated', url, 'video');
+    this.setForeground('video');
+    return Promise.resolve();
+  }
+  showVideo(): Promise<void> {
+    this.calls.push('show video');
+    this.setForeground('video');
+    return Promise.resolve();
+  }
+  evaluateInVideo(): Promise<unknown> {
+    return Promise.resolve(undefined);
   }
   showMusic(url: string, reload: boolean): Promise<void> {
     this.calls.push(this.hasMusic && !reload ? 'show music' : `music ${url}`);
@@ -111,6 +146,7 @@ const pairing: PairingInfo = {
 function setup() {
   const browser = new FakeBrowser();
   const music = new FakeMusic();
+  const video = new FakeVideo();
   const input = new FakeInput();
   let interval = 30;
   let images: Wallpaper[] = [
@@ -121,6 +157,7 @@ function setup() {
     {
       browser,
       music,
+      video,
       remote: new RemoteControl(browser, input),
       homeUrl: HOME,
       settings: {
@@ -165,7 +202,7 @@ function setup() {
     const c: HubClient = { role, send: (m) => received.push(m) };
     return { c, received, last: () => received.at(-1) };
   };
-  return { browser, music, input, hub, client, images: () => images };
+  return { browser, music, video, input, hub, client, images: () => images };
 }
 
 describe('viewForUrl', () => {
@@ -213,18 +250,30 @@ describe('StateHub : état', () => {
 });
 
 describe('StateHub : navigation', () => {
-  it('lance un service, puis revient à l’accueil, et diffuse la nouvelle vue', async () => {
+  it('lance un service dans sa fenêtre, revient à l’accueil sans la fermer, et y retourne', async () => {
     const { hub, client, browser } = setup();
     const remote = client('remote');
     hub.addClient(remote.c);
 
     await hub.handle({ type: 'launch', service: 'prime-video' });
-    expect(browser.calls).toEqual(['goto https://www.primevideo.com/']);
+    expect(browser.calls).toEqual(['video https://www.primevideo.com/']);
     expect(remote.last()).toMatchObject({ state: { view: 'prime-video' } });
 
+    // L'accueil n'est pas rechargé : la fenêtre des services est réduite, la lecture continue.
+    await hub.handle({ type: 'home' });
+    expect(browser.calls.at(-1)).toBe('show main');
+    expect(remote.last()).toMatchObject({ state: { view: 'home' } });
+
+    await hub.handle({ type: 'show-video' });
+    expect(browser.calls.at(-1)).toBe('show video');
+    expect(remote.last()).toMatchObject({ state: { view: 'prime-video' } });
+  });
+
+  it('ramène l’onglet principal à l’accueil s’il n’y est pas', async () => {
+    const { hub, browser } = setup();
+    await browser.navigate('https://www.google.com/');
     await hub.handle({ type: 'home' });
     expect(browser.calls.at(-1)).toBe(`goto ${HOME}`);
-    expect(remote.last()).toMatchObject({ state: { view: 'home' } });
   });
 
   it('ouvre le navigateur vide de l’écran TV sans couper la musique', async () => {
@@ -234,12 +283,12 @@ describe('StateHub : navigation', () => {
     music.playing = true;
 
     await hub.handle({ type: 'launch', service: 'browser' });
-    expect(browser.calls).toEqual([`goto ${HOME}navigateur`]);
+    expect(browser.calls).toEqual([`video ${HOME}navigateur`]);
     expect(music.calls).toEqual([]);
     expect(remote.last()).toMatchObject({ state: { view: 'browser' } });
 
     await hub.handle({ type: 'launch', service: 'twitch' });
-    expect(browser.calls.at(-1)).toBe('goto https://www.twitch.tv/');
+    expect(browser.calls.at(-1)).toBe('video https://www.twitch.tv/');
     expect(music.calls).toEqual(['pause']);
   });
 
@@ -273,13 +322,14 @@ describe('StateHub : musique', () => {
     expect(browser.calls.at(-1)).toBe('show music');
   });
 
-  it('ramène l’onglet principal à l’accueil avant d’afficher la musique', async () => {
-    const { hub, browser } = setup();
+  it('met la vidéo en pause avant d’afficher la musique, sans fermer sa fenêtre', async () => {
+    const { hub, browser, video } = setup();
     await hub.handle({ type: 'launch', service: 'youtube' });
+    video.playing = true;
     await hub.handle({ type: 'play-track', videoId: 'dQw4w9WgXcQ', playlistId: 'RDAMVM1' });
+    expect(video.calls).toEqual(['pause']);
     expect(browser.calls).toEqual([
-      'goto https://www.youtube.com/',
-      `goto ${HOME}`,
+      'video https://www.youtube.com/',
       `music ${MUSIC}watch?v=dQw4w9WgXcQ&list=RDAMVM1`,
     ]);
   });
@@ -292,6 +342,26 @@ describe('StateHub : musique', () => {
     music.playing = false;
     await hub.handle({ type: 'launch', service: 'prime-video' });
     expect(hub.health()).toMatchObject({ view: 'prime-video', idle: false });
+  });
+
+  it('compte une vidéo qui joue en arrière-plan comme une utilisation', async () => {
+    const { hub, video } = setup();
+    await hub.handle({ type: 'launch', service: 'twitch' });
+    video.playing = true;
+    await hub.handle({ type: 'home' });
+    expect(hub.health()).toMatchObject({ view: 'home', videoPlaying: true, idle: false });
+  });
+
+  it('ne fait jouer qu’une source à la fois : relancer l’une met l’autre en pause', async () => {
+    const { hub, music, video } = setup();
+    music.playing = true;
+    await hub.handle({ type: 'video', action: 'play-pause' });
+    expect(music.calls).toEqual(['pause']);
+    expect(video.calls).toEqual(['play-pause']);
+
+    await hub.handle({ type: 'music', action: 'play-pause' });
+    expect(video.calls).toEqual(['play-pause', 'pause']);
+    expect(music.calls).toEqual(['pause', 'play-pause']);
   });
 
   it('met la musique en pause quand on lance un autre service, et transmet les commandes', async () => {

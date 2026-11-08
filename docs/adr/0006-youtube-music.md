@@ -13,8 +13,8 @@
   - **Accueil** : la fenêtre est réduite et l'onglet principal revient devant. La lecture
     continue : une page réduite reste « visible » pour Chromium et n'est pas ralentie
     (vérifié en kiosque, captures d'écran à l'appui).
-  - Avant d'afficher la musique, l'onglet principal revient à l'accueil (une vidéo qui y
-    jouait s'arrête). Lancer un autre service met la musique en pause.
+  - Avant d'afficher la musique, la vidéo en cours se met en pause (voir l'ADR 0009). Lancer
+    un autre service met la musique en pause.
   - Après un redémarrage du serveur, la fenêtre est retrouvée par son URL et son état.
 - **Suivi de lecture** : la page est interrogée chaque seconde par `page.evaluate`
   (fonctionne fenêtre réduite) : `navigator.mediaSession.metadata` pour le titre, l'artiste

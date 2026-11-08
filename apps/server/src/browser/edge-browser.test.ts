@@ -33,13 +33,24 @@ describe('pickPages', () => {
   const home = 'http://127.0.0.1:8080/';
   const music = 'https://music.youtube.com/watch?v=abc';
 
+  const twitch = 'https://www.twitch.tv/zerator';
+
   it('retrouve la fenêtre de musique à côté de l’onglet principal, dans les deux ordres', () => {
-    expect(pickPages([home, music])).toEqual({ main: 0, music: 1 });
-    expect(pickPages([music, home])).toEqual({ main: 1, music: 0 });
+    expect(pickPages([home, music], home)).toEqual({ main: 0, music: 1, video: null });
+    expect(pickPages([music, home], home)).toEqual({ main: 1, music: 0, video: null });
   });
 
-  it('considère un onglet YouTube Music seul comme l’onglet principal', () => {
-    expect(pickPages([music])).toEqual({ main: 0, music: null });
-    expect(pickPages([home, 'https://www.youtube.com/'])).toEqual({ main: 0, music: null });
+  it('retrouve la fenêtre des services, quel que soit l’ordre des onglets', () => {
+    expect(pickPages([twitch, home, music], home)).toEqual({ main: 1, music: 2, video: 0 });
+    expect(pickPages([home, `${home}navigateur`], home)).toEqual({
+      main: 0,
+      music: null,
+      video: 1,
+    });
+  });
+
+  it('prend le premier onglet comme principal s’il n’y a pas d’accueil', () => {
+    expect(pickPages([music], home)).toEqual({ main: 0, music: null, video: null });
+    expect(pickPages([twitch, music], home)).toEqual({ main: 0, music: 1, video: null });
   });
 });

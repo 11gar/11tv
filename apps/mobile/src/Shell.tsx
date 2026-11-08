@@ -6,7 +6,7 @@ import {
   type ServiceId,
   type VolumeAction,
 } from '@11tv/shared';
-import { useAppSocket, Wallpapers } from '@11tv/web';
+import { ServiceIcon, useAppSocket, Wallpapers } from '@11tv/web';
 import { useCallback, useEffect, useState } from 'preact/hooks';
 import { fetchSession } from './api';
 import { Clock } from './components/Clock';
@@ -15,7 +15,6 @@ import { KeyboardPanel } from './components/KeyboardPanel';
 import { NowPlayingPill } from './components/NowPlayingPill';
 import { PostItComposer } from './components/PostItComposer';
 import { RepeatButton } from './components/RepeatButton';
-import { ServiceIcon } from './components/ServiceIcon';
 import { Sheet } from './components/Sheet';
 import { Trackpad } from './components/Trackpad';
 import { consumeUpdateNotice } from './components/UpdateSettings';
@@ -233,6 +232,7 @@ export function Shell({ onSessionLost }: Props) {
 
         <NowPlayingPill
           music={state?.music}
+          video={state?.video}
           send={send}
           onOpen={() => {
             setPanel('music');

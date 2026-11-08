@@ -31,8 +31,11 @@ apps/tv, apps/mobile  interfaces Preact construites par Vite et servies par le s
 
 L'état affiché vient donc de ce que fait vraiment Edge, pas de ce qui a été demandé.
 
-YouTube Music suit un chemin à part : il a sa propre fenêtre Edge, affichée en plein écran
-ou réduite, et la vue `youtube-music` correspond à cette fenêtre au premier plan.
+YouTube Music et les services ont chacun leur fenêtre Edge, affichée en plein écran ou
+réduite ; l'onglet principal reste sur l'accueil. La vue correspond à la fenêtre au premier
+plan (`youtube-music`, ou le service de la fenêtre des services). `VideoService` suit la
+lecture des services comme `MusicService` celle de la musique ; voir
+[l'ADR 0009](adr/0009-lecture-en-arriere-plan.md).
 `MusicService` interroge la page chaque seconde et ne rediffuse l'état qu'aux changements
 visibles ; voir [l'ADR 0006](adr/0006-youtube-music.md).
 
@@ -62,7 +65,7 @@ TV (PIN d'appairage) depuis le réseau.
 - **Journaux** : rotation par taille faite par le serveur (10 Mo, 5 fichiers).
 - **Edge** : boucle de réconciliation toutes les 5 s (port de debug -> connexion -> onglet).
   Edge est détaché du serveur : un redémarrage du serveur ne ferme pas le kiosque, ni la
-  fenêtre de musique, retrouvée par son URL.
+  fenêtre de musique ni celle des services, retrouvées par leur URL.
 - **WebSocket** : ping de protocole côté serveur, message `heartbeat` pour le client, délai
   de reconnexion exponentiel avec une part aléatoire, reconnexion immédiate au réveil du téléphone.
 - **IP dynamique** : vérifiée chaque minute ; le certificat est réémis et rechargé à chaud
@@ -87,3 +90,4 @@ Les choix structurants sont détaillés dans [adr/](adr/) :
 6. [YouTube Music (phase 3)](adr/0006-youtube-music.md)
 7. [Démarrage automatique et robustesse (phase 4)](adr/0007-demarrage-automatique.md)
 8. [Modules de cartes pour les outils externes](adr/0008-modules-de-cartes.md)
+9. [Vidéos en arrière-plan](adr/0009-lecture-en-arriere-plan.md)

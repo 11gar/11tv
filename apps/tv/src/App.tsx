@@ -1,4 +1,4 @@
-import { BROWSER_PATH, type TvState } from '@11tv/shared';
+import { activeNowPlaying, BROWSER_PATH, type TvState } from '@11tv/shared';
 import { useAppSocket, Wallpapers } from '@11tv/web';
 import { CardSlot } from './cards/CardSlot';
 import { BrowserPage } from './components/BrowserPage';
@@ -25,7 +25,9 @@ function Home() {
       <CardSlot slot="right" cards={state?.cards ?? []} />
       <PostItWall postIts={state?.postIts ?? []} />
       {state?.pairing && <PairingPanel pairing={state.pairing} />}
-      <NowPlayingBar nowPlaying={state?.music.nowPlaying ?? null} />
+      <NowPlayingBar
+        active={activeNowPlaying(state?.music.nowPlaying ?? null, state?.video ?? null)}
+      />
       {status !== 'open' && <div class="status-badge glass">Connexion au serveur…</div>}
     </main>
   );

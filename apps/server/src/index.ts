@@ -18,6 +18,7 @@ import { createLogger } from './log';
 import { ArtworkProxy } from './music/artwork';
 import { MusicHistory } from './music/history';
 import { MusicService } from './music/music-service';
+import { VideoService } from './video/video-service';
 import { getLanAddresses } from './net/addresses';
 import { SettingsService } from './settings/settings';
 import { TlsManager } from './tls/tls-manager';
@@ -100,6 +101,7 @@ async function main(): Promise<void> {
     artwork,
     log.child({ module: 'musique' }),
   );
+  const video = new VideoService(browser, artwork, log.child({ module: 'video' }));
   // Modules, allumés ou éteints depuis le téléphone : les post-it, et un module par outil
   // externe (Me'Mories…), qui ne fonctionne que s'il est configuré.
   const cardModules = await loadCardModules(config.paths.modules, log);
@@ -148,6 +150,7 @@ async function main(): Promise<void> {
     {
       browser,
       music,
+      video,
       remote,
       homeUrl,
       settings: {
@@ -188,6 +191,9 @@ async function main(): Promise<void> {
   music.on('change', () => {
     hub.broadcast();
   });
+  video.on('change', () => {
+    hub.broadcast();
+  });
   await wallpapers.init(() => {
     hub.broadcast();
   });
@@ -215,6 +221,7 @@ async function main(): Promise<void> {
   await setupApp.listen({ host: '0.0.0.0', port: config.ports.setup });
   browser.start();
   music.start();
+  video.start();
   modules.startActive();
 
   // --- Changement d'adresse IP (pas d'IP fixe) ----------------------------------------
@@ -244,6 +251,7 @@ async function main(): Promise<void> {
     clearInterval(addressWatch);
     clearInterval(logRotation);
     music.stop();
+    video.stop();
     modules.stopAll();
     wallpapers.close();
     await browser.stop();

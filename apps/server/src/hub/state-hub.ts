@@ -21,6 +21,7 @@ import type { Logger } from '../log';
 import type { MusicService } from '../music/music-service';
 import type { ModuleManager } from '../modules/module-manager';
 import type { PostItBoard } from '../postits/board';
+import type { VideoService } from '../video/video-service';
 
 export type ClientRole = 'tv' | 'remote';
 
@@ -44,6 +45,8 @@ export interface HubWallpapers {
 
 export type HubMusic = Pick<MusicService, 'state' | 'control' | 'pause' | 'playing'>;
 
+export type HubVideo = Pick<VideoService, 'state' | 'playPause' | 'pause' | 'playing'>;
+
 export type HubPostIts = Pick<PostItBoard, 'list' | 'add' | 'remove' | 'clear'>;
 
 export type HubModules = Pick<ModuleManager, 'list' | 'setEnabled' | 'setOption' | 'isActive'>;
@@ -51,6 +54,7 @@ export type HubModules = Pick<ModuleManager, 'list' | 'setEnabled' | 'setOption'
 export interface HubDeps {
   browser: BrowserController;
   music: HubMusic;
+  video: HubVideo;
   remote: Pick<
     RemoteControl,
     'pointerAvailable' | 'key' | 'text' | 'back' | 'move' | 'click' | 'scroll' | 'volume'
@@ -65,7 +69,7 @@ export interface HubDeps {
   cards: () => TvCard[];
 }
 
-/** Ce qu'affiche l'onglet principal, d'après son URL. */
+/** Ce qu'affiche un onglet (accueil ou fenêtre des services), d'après son URL. */
 export function viewForUrl(url: string, homeUrl: string): View {
   if (url.startsWith(new URL(BROWSER_PATH, homeUrl).href)) return 'browser';
   if (url.startsWith(homeUrl)) return 'home';
@@ -79,8 +83,10 @@ export function viewForUrl(url: string, homeUrl: string): View {
  */
 export class StateHub {
   private readonly clients = new Set<HubClient>();
-  /** Ce qu'affiche l'onglet principal (la fenêtre de musique peut être devant). */
+  /** Ce qu'affiche l'onglet principal (une autre fenêtre peut être devant). */
   private mainView: View = 'home';
+  /** Ce qu'affiche la fenêtre des services, devant ou réduite. */
+  private videoView: View = 'other';
 
   constructor(
     private readonly deps: HubDeps,
@@ -92,17 +98,26 @@ export class StateHub {
     deps.browser.on('foreground', () => {
       this.broadcast();
     });
-    deps.browser.on('navigated', (url) => {
+    deps.browser.on('navigated', (url, target) => {
       const view = viewForUrl(url, deps.homeUrl);
-      if (view === this.mainView) return;
-      this.mainView = view;
-      this.log.debug({ view, url }, 'Vue changée');
+      const previous = this.view;
+      if (target === 'main') this.mainView = view;
+      else this.videoView = view;
+      if (this.view === previous) return;
+      this.log.debug({ view: this.view, url }, 'Vue changée');
       this.broadcast();
     });
   }
 
   private get view(): View {
-    return this.deps.browser.foreground === 'music' ? 'youtube-music' : this.mainView;
+    switch (this.deps.browser.foreground) {
+      case 'music':
+        return 'youtube-music';
+      case 'video':
+        return this.videoView;
+      case 'main':
+        return this.mainView;
+    }
   }
 
   addClient(client: HubClient): () => void {
@@ -116,19 +131,28 @@ export class StateHub {
   }
 
   /** Résumé pour les scripts locaux : la TV est-elle en train de servir à quelque chose ? */
-  health(): { browser: BrowserStatus; view: View; musicPlaying: boolean; idle: boolean } {
+  health(): {
+    browser: BrowserStatus;
+    view: View;
+    musicPlaying: boolean;
+    videoPlaying: boolean;
+    idle: boolean;
+  } {
     const musicPlaying = this.deps.music.playing;
+    const videoPlaying = this.deps.video.playing;
     const view = this.view;
     return {
       browser: this.deps.browser.status,
       view,
       musicPlaying,
-      idle: view === 'home' && !musicPlaying,
+      videoPlaying,
+      // Une vidéo qui continue en arrière-plan compte comme une utilisation.
+      idle: view === 'home' && !musicPlaying && !videoPlaying,
     };
   }
 
   async handle(message: ClientMessage): Promise<void> {
-    const { browser, music, remote, settings, wallpapers } = this.deps;
+    const { browser, music, video, remote, settings, wallpapers } = this.deps;
     switch (message.type) {
       case 'launch': {
         const service = getService(message.service);
@@ -137,7 +161,8 @@ export class StateHub {
         // Pas deux sons à la fois : la musique se met en pause quand on lance une vidéo. Le
         // navigateur vide la laisse jouer.
         if (service.id !== 'browser') await music.pause();
-        return browser.navigate(new URL(service.url, this.deps.homeUrl).href);
+        // Dans la fenêtre des services : revenir à l'accueil ne coupera pas la lecture.
+        return browser.openVideo(new URL(service.url, this.deps.homeUrl).href);
       }
       case 'home':
         this.log.info('Retour à l’accueil');
@@ -165,7 +190,13 @@ export class StateHub {
         return;
 
       case 'music':
+        if (message.action === 'play-pause' && !music.playing) await video.pause();
         return music.control(message.action);
+      case 'video':
+        if (!video.playing) await music.pause();
+        return video.playPause();
+      case 'show-video':
+        return browser.showVideo();
       case 'play-track':
         this.log.info({ videoId: message.videoId }, 'Lecture d’un titre');
         return this.openMusic(musicTrackUrl(message.videoId, message.playlistId), true);
@@ -197,10 +228,11 @@ export class StateHub {
   }
 
   /**
-   * Affiche YouTube Music. L'onglet principal revient d'abord à l'accueil : une vidéo qui y
-   * jouait s'arrête, et c'est l'accueil qu'on retrouvera en réduisant la musique.
+   * Affiche YouTube Music. La vidéo en cours se met en pause (sa fenêtre est réduite), et
+   * c'est l'accueil qu'on retrouvera en réduisant la musique.
    */
   private async openMusic(url: string, reload: boolean): Promise<void> {
+    await this.deps.video.pause();
     if (this.mainView !== 'home') await this.deps.browser.navigate(this.deps.homeUrl);
     await this.deps.browser.showMusic(url, reload);
   }
@@ -218,6 +250,7 @@ export class StateHub {
       wallpapers: this.deps.wallpapers.list(),
       pointerAvailable: this.deps.remote.pointerAvailable,
       music: this.deps.music.state(),
+      video: this.deps.video.state(),
       // Éteints, les post-it restent dans postits.json mais ne s'affichent plus.
       postIts: this.deps.modules.isActive(POSTITS_MODULE_ID) ? this.deps.postIts.list() : [],
       modules: this.deps.modules.list(),

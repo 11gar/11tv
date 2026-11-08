@@ -12,6 +12,7 @@ import {
   VOLUME_ACTIONS,
 } from './remote';
 import { SERVICE_IDS } from './services';
+import { VIDEO_ACTIONS } from './video';
 
 // Validation des entrées côté serveur. `satisfies` garantit que chaque schéma reste aligné
 // avec le type déclaré dans ./messages.
@@ -35,6 +36,8 @@ export const clientMessageSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('pointer-scroll'), dy: delta }),
   z.object({ type: z.literal('volume'), action: z.enum(VOLUME_ACTIONS) }),
   z.object({ type: z.literal('music'), action: z.enum(MUSIC_ACTIONS) }),
+  z.object({ type: z.literal('video'), action: z.enum(VIDEO_ACTIONS) }),
+  z.object({ type: z.literal('show-video') }),
   z.object({
     type: z.literal('play-track'),
     videoId: z.string().regex(VIDEO_ID_PATTERN),
